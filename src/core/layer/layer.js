@@ -1,22 +1,25 @@
-let lid = 0
-let z = 199
 export default class Layer {
   tag // component name
   flag
+  option
   styles // style alias
-  lid
+
+  uid
   position
+  isCloned
   children // reserved
 
-  constructor(tag, option, data, styles, dataSource, children) {
+  constructor(tag, flag, option, styles, children) {
     this.tag = tag
+    this.flag = flag
     this.option = option
-    this.data = data
     this.styles = styles
-    this.dataSource = dataSource
     this.children = children
-    this.lid = lid++
-    this.z = z++
+
+    this.uid = new Date().getTime()
+    this.position = { x: 0, y: 0 }
+    this.isCloned = false
+    this.z = 0
   }
 }
 
@@ -24,11 +27,15 @@ export function cloneLayer(layer) {
   const cloned = new Layer(
     layer.tag,
     layer.option,
-    layer.data,
+    layer.flag,
     layer.styles,
-    layer.dataSource,
     layer.children && layer.children.slice(0)
   )
+
+  cloned.uid = new Date().getTime()
+  cloned.position = { x: 0, y: 0 }
+  cloned.z = 0
+  cloned.isCloned = true
 
   return cloned
 }

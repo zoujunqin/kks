@@ -1,3 +1,5 @@
 export default {
-  1: 1
+  props: {
+    width: '宽度'
+  }
 }
