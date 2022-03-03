@@ -1,5 +1,6 @@
 import handleAfterRequireContext from './utils/traver'
 import Layer from '@/core/layer/layer.js'
+import { COMPONENT_COMMON, COMPONENT_ECHART } from '@/core/layer/constants.js'
 
 const baseComponentsFiles = require.context(
   './components/B',
@@ -7,20 +8,14 @@ const baseComponentsFiles = require.context(
   /index\.vue$/
 )
 const baseComponents = handleAfterRequireContext(baseComponentsFiles)
-const baseOptionsFiles = require.context('./components/B', true, /option\.js$/)
-const baseOptions = handleAfterRequireContext(baseOptionsFiles)
+const baseConfigsFiles = require.context('./components/B', true, /config\.js$/)
+const baseConfigs = handleAfterRequireContext(baseConfigsFiles)
 
-export const handledBaseOptions = Object.keys(baseComponents).map((key) => {
-  const baseOption =
-    baseOptions[key.replace(/\/([a-z]|[A-Z]|[0-9])*/g, '/option')]
+export const handledBaseConfigs = Object.keys(baseComponents).map((key) => {
+  const baseConfig =
+    baseConfigs[key.replace(/\/([a-z]|[A-Z]|[0-9])*/g, '/config')]
 
-  return new Layer(
-    baseComponents[key].name,
-    baseOption.option,
-    baseOption.data,
-    baseOption.style,
-    baseOption.dataSource
-  )
+  return new Layer(baseComponents[key].name, COMPONENT_COMMON, baseConfig)
 })
 
 const echartOptionsFiles = require.context(
@@ -29,17 +24,22 @@ const echartOptionsFiles = require.context(
   /option\.js$/
 )
 const echartOptions = handleAfterRequireContext(echartOptionsFiles)
-
-export const handledEchartOptions = Object.values(echartOptions).map(
-  (echartOption) => {
-    return new Layer(
-      'Echart',
-      echartOption.option,
-      echartOption.data,
-      echartOption.style,
-      echartOption.dataSource
-    )
-  }
+const echartConfigsFiles = require.context(
+  './components/E',
+  true,
+  /config\.js$/
 )
+const echartConfigs = handleAfterRequireContext(echartConfigsFiles)
 
-export const handledOptions = [...handledBaseOptions, ...handledEchartOptions]
+export const handledEchartConfigs = Object.keys(echartOptions).map((key) => {
+  const echartConfig =
+    echartConfigs[key.replace(/\/([a-z]|[A-Z]|[0-9])*/g, '/config')]
+
+  echartConfig.option = echartOptions[key]
+  return new Layer('Echart', COMPONENT_ECHART, echartConfig)
+})
+
+console.log(handledBaseConfigs)
+console.log(handledEchartConfigs)
+
+export const handledConfigs = [...handledBaseConfigs, ...handledEchartConfigs]

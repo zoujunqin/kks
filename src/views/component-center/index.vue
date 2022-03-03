@@ -1,29 +1,17 @@
 <script>
-import { handledOptions } from '../../traver'
+import { handledConfigs } from '../../traver'
 export default {
   data() {
-    return {
-      handledOptions
-      // components: [
-      //   {
-      //     tag: 'Echart',
-      //     option: {},
-      //     data: [],
-      //     style: {},
-      //     source: [],
-      //     children: []
-      //   }
-      // ]
-    }
+    return {}
   },
 
   render() {
     return (
       <div class="list">
-        {handledOptions.map((option) => {
+        {handledConfigs.map((config) => {
           return (
             <div class="item">
-              <option.tag option={option.option}></option.tag>
+              <config.tag option={config.option.option}></config.tag>
             </div>
           )
         })}

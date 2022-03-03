@@ -1,5 +1,6 @@
 <template>
   <el-input v-model="input" placeholder=""></el-input>
+  <!-- <div @click="click"></div> -->
 </template>
 
 <script>
@@ -18,6 +19,12 @@ export default {
   data() {
     return {
       input: ''
+    }
+  },
+
+  methods: {
+    click() {
+      this.$emit('kk')
     }
   }
 }
