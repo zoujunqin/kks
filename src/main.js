@@ -11,6 +11,8 @@ import 'element-ui/lib/theme-chalk/index.css'
 
 import '@/traver'
 
+import 'echarts-liquidfill'
+
 Vue.use(ElementUI)
 
 Vue.config.productionTip = false

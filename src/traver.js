@@ -13,7 +13,7 @@ const baseConfigs = handleAfterRequireContext(baseConfigsFiles)
 
 export const handledBaseConfigs = Object.keys(baseComponents).map((key) => {
   const baseConfig =
-    baseConfigs[key.replace(/\/([a-z]|[A-Z]|[0-9])*/g, '/config')]
+    baseConfigs[key.replace(/(\/([a-z]|[A-Z]|[0-9])*)$/g, '/config')]
 
   return new Layer(baseComponents[key].name, COMPONENT_COMMON, baseConfig)
 })
@@ -33,13 +33,13 @@ const echartConfigs = handleAfterRequireContext(echartConfigsFiles)
 
 export const handledEchartConfigs = Object.keys(echartOptions).map((key) => {
   const echartConfig =
-    echartConfigs[key.replace(/\/([a-z]|[A-Z]|[0-9])*/g, '/config')]
+    echartConfigs[key.replace(/(\/([a-z]|[A-Z]|[0-9])*)$/g, '/config')]
 
   echartConfig.option = echartOptions[key]
   return new Layer('Echart', COMPONENT_ECHART, echartConfig)
 })
 
-console.log(handledBaseConfigs)
-console.log(handledEchartConfigs)
+// console.log(handledBaseConfigs)
+// console.log(handledEchartConfigs)
 
 export const handledConfigs = [...handledBaseConfigs, ...handledEchartConfigs]

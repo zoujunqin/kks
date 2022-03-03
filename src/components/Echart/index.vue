@@ -50,7 +50,6 @@ export default {
   },
   methods: {
     initChart() {
-      console.log(this.$el)
       // 初始化echart
       this.chart = echarts.init(this.$refs.chart)
 

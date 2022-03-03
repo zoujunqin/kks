@@ -4537,12 +4537,17 @@
     "jsbn" "~0.1.0"
     "safer-buffer" "^2.1.0"
 
-"echarts@^4.2.1":
-  "integrity" "sha512-pw4xScRPsLegD/cqEcoXRKeA2SD4+s+Kyo0Na166NamOWhzNl2yI5RZ2rE97tBlAopNmhyMeBVpAeD5qb+ee1A=="
-  "resolved" "https://registry.npmmirror.com/echarts/-/echarts-4.2.1.tgz"
-  "version" "4.2.1"
+"echarts-liquidfill@^2.0.6":
+  "integrity" "sha512-p+AH0O9/BtwXMQQyhjJbMZo+GwRAgWG/DCyK5r27PQzpS0UWrgXu57MyEFc0A8Ub3sRuqEu08BuxwHICBkSWSQ=="
+  "resolved" "https://registry.npmmirror.com/echarts-liquidfill/-/echarts-liquidfill-2.0.6.tgz"
+  "version" "2.0.6"
+
+"echarts@^4.2.1", "echarts@^4.8.0":
+  "integrity" "sha512-+ugizgtJ+KmsJyyDPxaw2Br5FqzuBnyOWwcxPKO6y0gc5caYcfnEUIlNStx02necw8jmKmTafmpHhGo4XDtEIA=="
+  "resolved" "https://registry.npmmirror.com/echarts/-/echarts-4.9.0.tgz"
+  "version" "4.9.0"
   dependencies:
-    "zrender" "4.0.7"
+    "zrender" "4.3.2"
 
 "ee-first@1.1.1":
   "integrity" "sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0="
@@ -12359,10 +12364,10 @@
     "normalize-path" "^1.0.0"
     "strip-indent" "^2.0.0"
 
-"zrender@4.0.7":
-  "integrity" "sha512-TNloHe0ums6zxbHfnaCryM61J4IWDajZwNq6dHk9vfWhhysO/OeFvvR0drBs/nbXha2YxSzfQj2FiCd6RVBe+Q=="
-  "resolved" "https://registry.npmmirror.com/zrender/-/zrender-4.0.7.tgz"
-  "version" "4.0.7"
+"zrender@^4.3.1", "zrender@4.3.2":
+  "integrity" "sha512-bIusJLS8c4DkIcdiK+s13HiQ/zjQQVgpNohtd8d94Y2DnJqgM1yjh/jpDb8DoL6hd7r8Awagw8e3qK/oLaWr3g=="
+  "resolved" "https://registry.npmmirror.com/zrender/-/zrender-4.3.2.tgz"
+  "version" "4.3.2"
 
 "zwitch@^1.0.0":
   "integrity" "sha512-V50KMwwzqJV0NpZIZFwfOD5/lyny3WlSzRiXgA0G7VUnRlqttta1L6UQIHzd6EuBY/cHGfwTIck7w1yH6Q5zUw=="
