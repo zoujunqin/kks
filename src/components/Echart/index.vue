@@ -20,7 +20,7 @@ export default {
       default: '200px'
     },
 
-    option: {
+    options: {
       type: Object,
       default: () => {}
     }
@@ -38,9 +38,9 @@ export default {
   },
 
   watch: {
-    option: {
-      handler(option) {
-        this.setOption(option)
+    options: {
+      handler(options) {
+        this.setOption(options)
       },
       deep: true
     }
@@ -53,11 +53,11 @@ export default {
       // 初始化echart
       this.chart = echarts.init(this.$refs.chart)
 
-      this.setOption(this.option)
+      this.setOption(this.options)
     },
-    async setOption(option) {
+    async setOption(options) {
       await this.$nextTick()
-      this.chart.setOption(option || {})
+      this.chart.setOption(options || {})
     }
   },
 

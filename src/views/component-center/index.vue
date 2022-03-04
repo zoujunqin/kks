@@ -1,6 +1,28 @@
 <script>
-import { handledConfigs } from '../../traver'
+import { genArrayARC } from '@/utils/traver.js'
+
+const baseComponentsFiles = require.context(
+  '@/components/Widgets',
+  true,
+  /index\.vue$/
+)
+const baseComponents = genArrayARC(baseComponentsFiles)
+console.log(baseComponents)
+const components = baseComponents.reduce((r, c) => {
+  r[c.name] = c
+  return r
+}, {})
+
+const baseSetupsFiles = require.context(
+  '@/components/Widgets',
+  true,
+  /setup\.js$/
+)
+const baseSetups = genArrayARC(baseSetupsFiles)
+
 export default {
+  components,
+
   data() {
     return {}
   },
@@ -8,14 +30,10 @@ export default {
   render() {
     return (
       <div class="list">
-        {handledConfigs.map((config) => {
+        {baseSetups.map((setup) => {
           return (
             <div class="item">
-              <config.tag
-                option={config.option.option}
-                width="100%"
-                height="100%"
-              ></config.tag>
+              <setup.name width="100%" height="100%"></setup.name>
             </div>
           )
         })}
