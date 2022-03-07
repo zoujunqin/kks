@@ -26,47 +26,45 @@ export default {
         scale: 1
       },
       scale: 1,
+      slotWrapWidth: 6000,
+      slotWrapHeight: 3000,
+      contentWidth: 0,
       contentHeight: 0,
-      contentWidth: 0
-    }
-  },
 
-  computed: {
-    slotWrapStyle() {
-      return {
-        width: this.contentWidth * 1.5 + 'px',
-        height: this.contentHeight * 1.5 + 'px'
-      }
+      rulerContent: null
     }
   },
 
   methods: {
-    initScroll() {
-      // await this.$nextTick()
-      const rulerContent = this.$refs.rulerContent
-      rulerContent.scrollLeft = 400
-      rulerContent.scrollTop = (this.contentHeight * 0.5) / 2
-    },
     async getContentHW() {
       await this.$nextTick()
-      this.contentHeight = this.$refs.subRulerContent.querySelector(
-        'div'
-      ).clientHeight
-      this.contentWidth = this.$refs.subRulerContent.querySelector(
-        'div'
-      ).clientWidth
+      const content = this.$refs.slotWrap?.children[0]
+      this.contentHeight = content.clientHeight
+      this.contentWidth = content.clientWidth
+
+      const rulerContent = this.$refs.rulerContent
+      rulerContent.scrollTop = (this.slotWrapHeight - this.contentHeight) / 2
+      rulerContent.scrollLeft = (this.slotWrapWidth - this.contentWidth) / 2
     },
     async getParentHW() {
       await this.$nextTick()
       this.horizonConfig.width = this.$parent.$el.clientWidth - 20
       this.verticalConfig.height = this.$parent.$el.clientHeight - 20
     },
-    handleScroll(e) {
-      const scrollTop = e.srcElement.scrollTop
-      const scrollLeft = e.srcElement.scrollLeft
-
-      this.$set(this.horizonConfig, 'start', scrollLeft)
-      this.$set(this.verticalConfig, 'start', scrollTop)
+    handleScroll() {
+      const rulerContent = this.$refs.rulerContent
+      const scrollTop = rulerContent.scrollTop
+      const scrollLeft = rulerContent.scrollLeft
+      this.$set(
+        this.horizonConfig,
+        'start',
+        (this.slotWrapWidth - this.contentWidth * this.scale) / 2 - scrollLeft
+      )
+      this.$set(
+        this.verticalConfig,
+        'start',
+        (this.slotWrapHeight - this.contentHeight * this.scale) / 2 - scrollTop
+      )
     },
     handleWheel(e) {
       if (e.ctrlKey || e.metaKey) {
@@ -83,15 +81,14 @@ export default {
         this.verticalConfig.scale = this.scale
 
         this.$slots.default[0].elm.style.transform = `scale(${this.scale})`
-        this.handleScroll(e)
+        this.handleScroll()
       }
     }
   },
 
   mounted() {
-    this.getParentHW()
-    this.initScroll()
     this.getContentHW()
+    this.getParentHW()
   },
 
   render() {
@@ -115,7 +112,14 @@ export default {
           on-wheel={this.handleWheel}
           on-scroll={this.handleScroll}
         >
-          <div ref="subRulerContent" style={this.slotWrapStyle}>
+          <div
+            ref="slotWrap"
+            class="slot-wrap"
+            style={{
+              width: this.slotWrapWidth + 'px',
+              height: this.slotWrapHeight + 'px'
+            }}
+          >
             {this.$slots.default}
           </div>
         </div>
@@ -154,7 +158,7 @@ export default {
   .ruler-content {
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: scroll;
     & > div {
       position: relative;
       & > div {

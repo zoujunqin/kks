@@ -1,5 +1,5 @@
 // // 不同缩放下的刻度值
-function scaleMapGap(scale) {
+function getGapSize(scale) {
   const initinalScale = 1
   const initinalGap = 10
 
@@ -32,7 +32,7 @@ function setCtxBase(ctx, width, height) {
 }
 
 export function drawHorizonRuler(ctx, config) {
-  const {
+  let {
     width,
     height,
     // beginX = 0,
@@ -40,34 +40,29 @@ export function drawHorizonRuler(ctx, config) {
     // gap,
     tickLine = 10,
     scale = 1,
-    start = -120 // px
+    start = -120 // px,
+    // offset = 0
   } = config
 
-  const usedWidth = width + start
   // 缩放倍数
-  const usedScale = Math.round(scale * 100) / 100
-  console.log('usedScale', usedScale)
+  scale = Math.round(scale * 100) / 100
   // 刻度间距 px
-  const usedGap = scaleMapGap(usedScale)
-  console.log('usedGap', usedGap)
+  const gapSize = getGapSize(scale)
   // 缩放后的间距 px
-  const usedScaleGap = usedGap * usedScale
-  console.log('usedScaleGap', usedScaleGap)
+  const scaleGapSize = gapSize * scale
   // 刻度个数
-  const ticks = Math.ceil(usedWidth / usedScaleGap)
-  console.log('ticks', ticks)
+  const ticks = Math.ceil((width - start) / scaleGapSize)
   // 初始下标
-  const usedStart = Math.floor(start / usedGap)
-  console.log('usedStart', usedStart)
+  const initinalIndex = Math.floor(start / scaleGapSize)
 
-  setCtxBase(ctx, usedWidth, height)
+  setCtxBase(ctx, width, height)
 
   ctx.beginPath()
-  for (let i = usedStart, count = 0; i <= ticks; i++, count++) {
-    const x = count * usedScaleGap
+  for (let i = -initinalIndex, count = 0; i <= ticks; i++, count++) {
+    const x = count * scaleGapSize
     ctx.moveTo(x, beginY)
     if (i % 10 === 0) {
-      ctx.fillText(i * usedGap, x + 4, 10)
+      ctx.fillText(i * gapSize, x + 4, 10)
       ctx.lineTo(x, 0)
     } else if (i % 5 === 0) ctx.lineTo(x, beginY - tickLine)
     else ctx.lineTo(x, beginY - 0.6 * tickLine)
@@ -78,43 +73,43 @@ export function drawHorizonRuler(ctx, config) {
 }
 
 export function drawVerticalRuler(ctx, config) {
-  const {
+  let {
     width,
     height,
-    beginX = 0,
-    beginY = 20,
+    // beginX = 0,
+    beginX = 20,
     // gap,
     tickLine = 10,
     scale = 1,
-    start = 0
+    start = -120 // px,
+    // offset = 0
   } = config
 
-  const usedHeight = height - beginY
-  const normalScale = Math.round(scale * 100) / 100
-  // console.log('scale', scale)
-  const scaledGap = scaleMapGap(normalScale)
-  // console.log('scaledGap', scaledGap)
-  const tickHeight = scaledGap * normalScale
-  // console.log('tickHeight', tickHeight)
-  const ticks = Math.ceil(usedHeight / (scaledGap * normalScale))
-  // console.log('ticks', ticks)
-  let startI = Math.floor(start / scaledGap)
+  // 缩放倍数
+  scale = Math.round(scale * 100) / 100
+  // 刻度间距 px
+  const gapSize = getGapSize(scale)
+  // 缩放后的间距 px
+  const scaleGapSize = gapSize * scale
+  // 刻度个数
+  const ticks = Math.ceil((height - start) / scaleGapSize)
+  // 初始下标
+  const initinalIndex = Math.floor(start / scaleGapSize)
 
-  setCtxBase(ctx, width, usedHeight)
+  setCtxBase(ctx, width, height)
 
   ctx.beginPath()
-  let y = beginY
-  for (startI; startI <= ticks; startI++) {
+  for (let i = -initinalIndex, count = 0; i <= ticks; i++, count++) {
+    const y = count * scaleGapSize
     ctx.moveTo(beginX, y)
-    ctx.save()
-    if (startI % 10 === 0) {
+    if (i % 10 === 0) {
+      ctx.save()
       ctx.rotate((90 * Math.PI) / 180)
-      ctx.fillText(startI * scaledGap, y + 4, -4)
+      ctx.fillText(i * gapSize, y + 4, -4)
       ctx.restore()
       ctx.lineTo(0, y)
-    } else if (startI % 5 === 0) ctx.lineTo(beginX - tickLine, y)
+    } else if (i % 5 === 0) ctx.lineTo(beginX - tickLine, y)
     else ctx.lineTo(beginX - 0.6 * tickLine, y)
-    y += tickHeight
   }
   ctx.stroke()
   ctx.closePath()
