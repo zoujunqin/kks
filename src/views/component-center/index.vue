@@ -7,7 +7,6 @@ const baseComponentsFiles = require.context(
   /index\.vue$/
 )
 const baseComponents = genArrayARC(baseComponentsFiles)
-console.log(baseComponents)
 const components = baseComponents.reduce((r, c) => {
   r[c.name] = c
   return r
