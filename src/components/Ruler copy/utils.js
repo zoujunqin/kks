@@ -31,8 +31,13 @@ function setCtxBase(ctx, width, height) {
   ctx.font = 13
 }
 
-export function drawHorizontalRuler(ctx, start, config) {
-  const { width, height, scale } = config
+export function drawHorizonRuler(ctx, config) {
+  const {
+    width,
+    height,
+    scale = 1,
+    start = 0 // px
+  } = config
   const y = height
   const tickLine = 10
 
@@ -73,8 +78,13 @@ export function drawHorizontalRuler(ctx, start, config) {
   ctx.setTransform(1, 0, 0, 1, 0, 0)
 }
 
-export function drawVerticalRuler(ctx, start, config) {
-  const { width, height, scale } = config
+export function drawVerticalRuler(ctx, config) {
+  const {
+    width,
+    height,
+    scale = 1,
+    start = 0 // px
+  } = config
 
   const x = width
   const tickLine = 10
@@ -116,5 +126,3 @@ export function drawVerticalRuler(ctx, start, config) {
   ctx.closePath()
   ctx.setTransform(1, 0, 0, 1, 0, 0)
 }
-
-export function noop() {}

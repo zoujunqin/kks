@@ -6,17 +6,25 @@ export default {
     return {
       startX: 0,
       startY: 0,
-      width: 0,
-      height: 0,
+      horizonConfig: {
+        width: 0,
+        height: 20,
+        start: 0,
+        scale: 1
+      },
+      verticalConfig: {
+        width: 20,
+        height: 0,
+        start: 0,
+        scale: 1
+      },
       scale: 1,
-
       slotWrapWidth: 6000,
       slotWrapHeight: 3000,
       contentWidth: 0,
       contentHeight: 0,
 
       lines: [],
-      showLines: true,
       movableLine: {},
       showMovableLine: false,
       movableLineIsVertical: false
@@ -37,22 +45,17 @@ export default {
     },
     async getParentHW() {
       await this.$nextTick()
-      this.width = this.$parent.$el.clientWidth - 20
-      this.height = this.$parent.$el.clientHeight - 20
+      this.horizonConfig.width = this.$parent.$el.clientWidth - 20
+      this.verticalConfig.height = this.$parent.$el.clientHeight - 20
     },
-
-    handleCornerClick() {
-      this.showLines = !this.showLines
-    },
-
     handleScroll() {
       const rulerContent = this.$refs.rulerContent
       const scrollTop = rulerContent.scrollTop
       const scrollLeft = rulerContent.scrollLeft
 
-      this.startX =
+      this.horizonConfig.start =
         scrollLeft - (this.slotWrapWidth - this.contentWidth * this.scale) / 2
-      this.startY =
+      this.verticalConfig.start =
         scrollTop - (this.slotWrapHeight - this.contentHeight * this.scale) / 2
     },
     handleWheel(e) {
@@ -70,6 +73,8 @@ export default {
         }
 
         this.scale = +this.scale.toFixed(2)
+        this.horizonConfig.scale = this.scale
+        this.verticalConfig.scale = this.scale
 
         this.$slots.default[0].elm.style.transform = `scale(${this.scale})`
         this.handleScroll()
@@ -80,35 +85,15 @@ export default {
       this.showMovableLine = true
     },
     handleMove(line) {
-      this.movableLine = line
+      this.movableLine = {
+        ...line
+        // value: line.value + this.start / this.scale
+      }
+      // this.$refs.movableLine.updateValue()
     },
-    handleUp(line) {
-      this.movableLine = { ...line, value: this.getValue(line) }
-      if (line.canAdded) this.lines.push(this.movableLine)
-
+    handleUp() {
       this.showMovableLine = false
-      this.movableLine = { ...this.movableLine, left: -1, top: -1 }
-    },
-
-    getValue(line) {
-      const { left, top, vertical, start } = line
-      const startValue = start / this.scale
-
-      return ((vertical ? left : top) - 20) / this.scale + startValue
-    },
-
-    handleLineDown(line) {
-      this.movableLine = line
-      this.showMovableLine = true
-    },
-    handleLineUp(line, index) {
-      this.movableLine = { ...line, value: this.getValue(line) }
-
-      if (line.canRemoved) this.lines.splice(index, 1)
-      else this.lines.splice(index, 1, this.movableLine)
-
-      this.showMovableLine = false
-      this.movableLine = { ...this.movableLine, left: -1, top: -1 }
+      this.lines.push(this.movableLine)
     }
   },
 
@@ -120,14 +105,11 @@ export default {
   render() {
     return (
       <div class="ruler">
-        <div class="corner" on-click={this.handleCornerClick} />
+        <div class="corner" />
 
         <RulerTick
-          class="horizontal-ruler-tick"
-          width={this.width}
-          height={this.height}
-          startX={this.startX}
-          startY={this.startY}
+          class="horizon-ruler-tick"
+          config={this.horizonConfig}
           scale={this.scale}
           on-down={this.handleDown}
           on-move={this.handleMove}
@@ -136,10 +118,7 @@ export default {
         <RulerTick
           class="vertical-ruler-tick"
           vertical
-          width={this.width}
-          height={this.height}
-          startX={this.startX}
-          startY={this.startY}
+          config={this.verticalConfig}
           scale={this.scale}
           on-down={this.handleDown}
           on-move={this.handleMove}
@@ -148,30 +127,27 @@ export default {
 
         {this.lines.map((line, index) => (
           <RulerLine
-            vShow={this.showLines}
-            ref={'rulerLine' + index}
             key={'rulerLine' + index}
-            line={line}
-            id={index}
-            value={line.value}
-            vertical={line.vertical}
             scale={this.scale}
-            startX={this.startX}
-            startY={this.startY}
-            on-down={this.handleLineDown}
-            on-move={this.handleMove}
-            on-up={this.handleLineUp}
+            line={line}
+            start={
+              line.vertical
+                ? this.horizonConfig.start
+                : this.verticalConfig.start
+            }
           />
         ))}
         <RulerLine
-          movable
+          move
           ref="movableLine"
-          vertical={this.movableLine.vertical}
           vShow={this.showMovableLine}
           scale={this.scale}
           line={this.movableLine}
-          startX={this.startX}
-          startY={this.startY}
+          start={
+            this.movableLine.vertical
+              ? this.horizonConfig.start
+              : this.verticalConfig.start
+          }
         />
         {/* <div class="movable-line" /> */}
 
@@ -214,9 +190,8 @@ export default {
     top: 0;
     left: 0;
     background-color: red;
-    z-index: 2023;
   }
-  .horizontal-ruler-tick {
+  .horizon-ruler-tick {
     position: absolute;
     top: 0;
     left: 20px;

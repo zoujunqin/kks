@@ -20,7 +20,7 @@ export default {
   .content {
     width: 1900px;
     height: 1000px;
-    background-color: gray;
+    background-color: #a4d3e1;
   }
 }
 </style>
