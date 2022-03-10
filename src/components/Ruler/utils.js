@@ -20,21 +20,22 @@ export function getGapSize(scale) {
   }
 }
 
-function setCtxBase(ctx, width, height) {
+function setCtxBase(ctx, config) {
+  const { width, height, tickBackground, tickLineColor, tickColor } = config
+
   ctx.clearRect(0, 0, width, height)
-  ctx.fillStyle = '#F5DEB3'
+  ctx.fillStyle = tickBackground
   ctx.fillRect(0, 0, width, height)
 
-  ctx.fillStyle = '#111' // 设置画笔属性
-  ctx.strokeStyle = '#333'
+  ctx.fillStyle = tickColor // 设置画笔属性
+  ctx.strokeStyle = tickLineColor
   ctx.lineWidth = 1
-  ctx.font = 13
+  ctx.font = 12
 }
 
 export function drawHorizontalRuler(ctx, start, config) {
-  const { width, height, scale } = config
-  const y = height
-  const tickLine = 10
+  const { width, height, scale, tickLine } = config
+  const halfTickLine = tickLine / 2
 
   // 刻度间距 px
   const gapSize = getGapSize(scale)
@@ -49,23 +50,32 @@ export function drawHorizontalRuler(ctx, start, config) {
       : Math.floor(start / scaleGapSize)
   const offsetX = start % scaleGapSize
 
-  setCtxBase(ctx, width, height)
+  setCtxBase(ctx, config)
 
   ctx.beginPath()
   for (let i = initialIndex, count = 0; i <= ticks; i++, count++) {
-    const x = count * scaleGapSize - offsetX
-    ctx.moveTo(x, y)
+    const x =
+      count * scaleGapSize -
+      offsetX +
+      parseFloat((ctx.lineWidth / 2).toFixed(2))
+
+    ctx.moveTo(x, height)
     ctx.save()
+
     if (i % 10 === 0) {
-      ctx.fillText(i * gapSize, x + 4, 10)
+      ctx.fillText(
+        i * gapSize,
+        x + 4,
+        height <= tickLine ? height - tickLine + 10 : height - 10
+      )
       ctx.restore()
-      ctx.lineTo(x, 0)
+      ctx.lineTo(x, height - tickLine)
     } else if (i % 5 === 0) {
       ctx.restore()
-      ctx.lineTo(x, y - tickLine)
+      ctx.lineTo(x, height - halfTickLine)
     } else {
       ctx.restore()
-      ctx.lineTo(x, y - 0.6 * tickLine)
+      ctx.lineTo(x, height - 0.6 * halfTickLine)
     }
   }
   ctx.stroke()
@@ -74,10 +84,8 @@ export function drawHorizontalRuler(ctx, start, config) {
 }
 
 export function drawVerticalRuler(ctx, start, config) {
-  const { width, height, scale } = config
-
-  const x = width
-  const tickLine = 10
+  const { width, height, scale, tickLine } = config
+  const halfTickLine = tickLine / 2
 
   // 刻度间距 px
   const gapSize = getGapSize(scale)
@@ -92,24 +100,32 @@ export function drawVerticalRuler(ctx, start, config) {
       : Math.floor(start / scaleGapSize)
   const offsetY = start % scaleGapSize
 
-  setCtxBase(ctx, width, height)
+  setCtxBase(ctx, config)
 
   ctx.beginPath()
   for (let i = initialIndex, count = 0; i <= ticks; i++, count++) {
-    const y = count * scaleGapSize - offsetY
-    ctx.moveTo(x, y)
+    const y =
+      count * scaleGapSize -
+      offsetY +
+      parseFloat((ctx.lineWidth / 2).toFixed(2))
+    ctx.moveTo(width, y)
     ctx.save()
     if (i % 10 === 0) {
       ctx.rotate((90 * Math.PI) / 180)
-      ctx.fillText(i * gapSize, y + 4, -4)
+      ctx.fillText(
+        i * gapSize,
+        y + 4,
+        width <= tickLine ? width - tickLine - 4 : tickLine - width + 10
+      )
+
       ctx.restore()
-      ctx.lineTo(0, y)
+      ctx.lineTo(width - tickLine, y)
     } else if (i % 5 === 0) {
       ctx.restore()
-      ctx.lineTo(x - tickLine, y)
+      ctx.lineTo(width - halfTickLine, y)
     } else {
       ctx.restore()
-      ctx.lineTo(x - 0.6 * tickLine, y)
+      ctx.lineTo(width - 0.6 * halfTickLine, y)
     }
   }
   ctx.stroke()

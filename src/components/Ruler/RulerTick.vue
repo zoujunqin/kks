@@ -8,13 +8,17 @@ export default {
     height: Number,
     startX: Number,
     startY: Number,
-    scale: Number
+    scale: Number,
+    thick: Number,
+    tickBackground: String,
+    tickLineColor: String,
+    tickLine: Number,
+    tickColor: String
   },
 
   data() {
     return {
       ctx: null,
-      canvasEl: null,
       line: null
     }
   },
@@ -25,13 +29,29 @@ export default {
     },
     startCombine() {
       return this.startX + this.startY
+    },
+    classes() {
+      return [this.vertical ? 'vertical-ruler-tick' : 'horizontal-ruler-tick']
+    },
+    styles() {
+      const style = {}
+      if (this.vertical) {
+        style.top = `${this.thick}px`
+        style.left = 0
+      } else {
+        style.left = `${this.thick}px`
+        style.top = 0
+      }
+      return style
     }
   },
 
   watch: {
-    widthCombineHeight() {
-      this.updateCanvas()
-      this.draw()
+    widthCombineHeight: {
+      handler() {
+        this.$nextTick(this.draw)
+      },
+      immediate: true
     },
     startCombine() {
       this.draw()
@@ -43,29 +63,20 @@ export default {
       const canvas = this.$el
       this.ctx = canvas && canvas.getContext('2d')
     },
-    updateCanvas() {
-      if (this.vertical) {
-        this.$el.width = 20
-        this.$el.height = this.height
-      } else {
-        this.$el.width = this.width
-        this.$el.height = 20
-      }
-    },
+
     draw() {
+      const config = {
+        width: this.width,
+        height: this.height,
+        scale: this.scale,
+        tickBackground: this.tickBackground,
+        tickLineColor: this.tickLineColor,
+        tickLine: this.tickLine,
+        tickColor: this.tickColor
+      }
       if (this.vertical) {
-        const config = {
-          width: 20,
-          height: this.height,
-          scale: this.scale
-        }
         drawVerticalRuler(this.ctx, this.startY, config)
       } else {
-        const config = {
-          width: this.width,
-          height: 20,
-          scale: this.scale
-        }
         drawHorizontalRuler(this.ctx, this.startX, config)
       }
     },
@@ -75,7 +86,7 @@ export default {
       e.stopPropagation()
       if (this.vertical) {
         this.line = {
-          canAdded: e.pageX - state.rulerOffsetX >= 20,
+          canAdded: e.pageX - state.rulerOffsetX >= this.thick,
           left: e.pageX - state.rulerOffsetX,
           top: 0,
           vertical: true,
@@ -83,7 +94,7 @@ export default {
         }
       } else {
         this.line = {
-          canAdded: e.pageY - state.rulerOffsetY >= 20,
+          canAdded: e.pageY - state.rulerOffsetY >= this.thick,
           top: e.pageY - state.rulerOffsetY,
           left: 0,
           vertical: false,
@@ -95,7 +106,10 @@ export default {
     upListener() {
       window.removeEventListener('mousemove', this.moveListener)
       window.removeEventListener('mouseup', this.upListener)
-      if (this.line) this.$emit('up', this.line)
+      if (this.line) {
+        this.$emit('up', this.line)
+        this.line = null
+      }
     },
     handleMousedown(e) {
       window.addEventListener('mousemove', this.moveListener)
@@ -116,10 +130,10 @@ export default {
   render() {
     return (
       <canvas
-        ref="canvas"
-        class={[
-          this.vertical ? 'vertical-ruler-tick' : 'horizontal-ruler-tick'
-        ]}
+        width={this.width}
+        height={this.height}
+        class={this.classes}
+        style={this.styles}
         on-mousedown={this.handleMousedown}
       />
     )

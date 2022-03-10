@@ -18,8 +18,8 @@ export default {
   position: relative;
   width: calc(100vw - 600px);
   .content {
-    width: 1900px;
-    height: 1000px;
+    width: 1600px;
+    height: 800px;
     background-color: #a4d3e1;
   }
 }

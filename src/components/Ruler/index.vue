@@ -1,19 +1,145 @@
 <script>
 import RulerTick from './RulerTick.vue'
 import RulerLine from './RulerLine'
+/**
+ * @componentName 标尺组件
+ * @desc 默认的 slot 只能是一个子节点
+ * @property {Number} thick 标尺左上角交叉处的宽度和高度
+ * @property {Number} slotWidth slot容器的宽度，一般为 content 的 2倍
+ * @property {Number} slotHeight slot容器的高度，一般为 content 的 2倍
+ * @property {String} slotBackground slot容器的背景色
+ * @property {Number} contentWidth 内容宽度
+ * @property {Number} contentHeight 内容高度
+ * @property {Number} width 整个标尺组件的宽度
+ * @property {Number} height 整个标尺组件的高度
+ * @property {Number} startX 水平标尺从 startX px 开始计算
+ * @property {Number} startY 垂直标尺从 startY px 开始计算
+ * @property {Number} scaleMax 最大放大倍数
+ * @property {Number} scaleMin 最小的缩放倍数
+ * @property {String} tickBackground 标尺背景色
+ * @property {String} tickLineColor 刻度线颜色
+ * @property {String} tickLine 满10刻度线长度
+ * @property {String} tickColor 刻度值颜色
+ * @property {String} indicatorBackground 参考线显示值背景色
+ * @property {String} indicatorColor 参考线显示值字体颜色
+ * @property {String} lineColor 参考线颜色
+ * @property {Number} lineThick 参考线厚度
+ * @property {String} movableLineColor 移动参考线颜色
+ * @property {Number} movableLineThick 移动参考线厚度
+ * @property {String} mlIndicatorBackground 移动参考线显示值背景色
+ * @property {String} mlIndicatorColor 移动参考线显示值字体颜色
+ * @property {String} cornerBackground 标尺左上角交叉背景色
+ */
 export default {
+  props: {
+    thick: {
+      type: Number,
+      default: 20
+    },
+    slotWidth: {
+      type: Number,
+      default: 3000
+    },
+    slotHeight: {
+      type: Number,
+      default: 1500
+    },
+    slotBackground: {
+      type: String,
+      default: '#dedddd'
+    },
+    contentWidth: {
+      type: Number,
+      default: 1600
+    },
+    contentHeight: {
+      type: Number,
+      default: 800
+    },
+    width: {
+      type: Number,
+      default: 1320
+    },
+    height: {
+      type: Number,
+      default: 813
+    },
+    startX: {
+      type: Number,
+      default: -120
+    },
+    startY: {
+      type: Number,
+      default: 0
+    },
+    scaleMax: {
+      type: Number,
+      default: 2
+    },
+    scaleMin: {
+      type: Number,
+      default: 0.2
+    },
+    tickBackground: {
+      type: String,
+      default: '#F5DEB3'
+    },
+    tickLineColor: {
+      type: String,
+      default: '#000'
+    },
+    tickLine: {
+      type: Number,
+      default: 20
+    },
+    tickColor: {
+      type: String,
+      default: '#000'
+    },
+    indicatorBackground: {
+      type: String,
+      default: 'green'
+    },
+    indicatorColor: {
+      type: String,
+      default: '#fff'
+    },
+    lineColor: {
+      type: String,
+      default: 'green'
+    },
+    lineThick: {
+      type: Number,
+      default: 1
+    },
+    movableLineColor: {
+      type: String,
+      default: '#FE323C'
+    },
+    movableLineThick: {
+      type: Number,
+      default: 1
+    },
+    mlIndicatorBackground: {
+      type: String,
+      default: '#FE323C'
+    },
+    mlIndicatorColor: {
+      type: String,
+      default: '#fff'
+    },
+    cornerBackground: {
+      type: String,
+      default: '#dedddd'
+    }
+  },
+
   data() {
     return {
-      startX: 0,
-      startY: 0,
-      width: 0,
-      height: 0,
-      scale: 1,
+      sx: 0,
+      sy: 0,
 
-      slotWrapWidth: 6000,
-      slotWrapHeight: 3000,
-      contentWidth: 0,
-      contentHeight: 0,
+      scale: 1,
 
       lines: [],
       showLines: true,
@@ -23,87 +149,111 @@ export default {
     }
   },
 
-  methods: {
-    async getContentHW() {
-      await this.$nextTick()
-      const content = this.$refs.slotWrap?.children[0]
-      this.contentHeight = content.clientHeight
-      this.contentWidth = content.clientWidth
-
-      const rulerContent = this.$refs.rulerContent
-      // 滚动使内容左上角跟容器左上角对齐
-      rulerContent.scrollTop = (this.slotWrapHeight - this.contentHeight) / 2
-      rulerContent.scrollLeft = (this.slotWrapWidth - this.contentWidth) / 2
+  computed: {
+    tickWidth() {
+      return this.width - this.thick
     },
-    async getParentHW() {
-      await this.$nextTick()
-      this.width = this.$parent.$el.clientWidth - 20
-      this.height = this.$parent.$el.clientHeight - 20
+    tickHeight() {
+      return this.height - this.thick
+    },
+    slotWrapStyles() {
+      return {
+        width: `${this.slotWidth}px`,
+        height: `${this.slotHeight}px`,
+        background: this.slotBackground
+      }
+    },
+    cornerStyles() {
+      return {
+        width: `${this.thick}px`,
+        height: `${this.thick}px`,
+        background: this.cornerBackground
+      }
+    },
+    styles() {
+      return {
+        'padding-left': `${this.thick}px`,
+        'padding-top': `${this.thick}px`
+      }
+    }
+  },
+
+  methods: {
+    // mouted 钩子执行
+    setScroll() {
+      const rulerContent = this.$refs.rc
+      // 滚动使内容左上角跟容器左上角对齐
+      rulerContent.scrollTop =
+        (this.slotHeight - this.contentHeight) / 2 + this.startY
+      rulerContent.scrollLeft =
+        (this.slotWidth - this.contentWidth) / 2 + this.startX
     },
 
     handleCornerClick() {
       this.showLines = !this.showLines
     },
 
+    // 滚动和放大缩小执行
     handleScroll() {
-      const rulerContent = this.$refs.rulerContent
-      const scrollTop = rulerContent.scrollTop
-      const scrollLeft = rulerContent.scrollLeft
+      const rc = this.$refs.rc
+      const scrollTop = rc.scrollTop
+      const scrollLeft = rc.scrollLeft
 
-      this.startX =
-        scrollLeft - (this.slotWrapWidth - this.contentWidth * this.scale) / 2
-      this.startY =
-        scrollTop - (this.slotWrapHeight - this.contentHeight * this.scale) / 2
+      this.sx =
+        scrollLeft - (this.slotWidth - this.contentWidth * this.scale) / 2
+      this.sy =
+        scrollTop - (this.slotHeight - this.contentHeight * this.scale) / 2
     },
+    // 放大缩小执行
     handleWheel(e) {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault()
-        if (
-          (this.scale <= 0.2 && e.wheelDelta < 0) ||
-          (this.scale >= 2 && e.wheelDelta > 0)
-        )
-          return
-        if (e.wheelDelta > 0) {
-          this.scale += 0.01
-        } else {
-          this.scale -= 0.01
-        }
 
-        this.scale = +this.scale.toFixed(2)
+        const ss = 0.02
+        this.scale = +(e.wheelDelta > 0
+          ? Math.min(this.scaleMax, this.scale + ss)
+          : Math.max(this.scaleMin, this.scale - ss)
+        ).toFixed(2)
 
         this.$slots.default[0].elm.style.transform = `scale(${this.scale})`
         this.handleScroll()
       }
     },
 
+    // 从刻度区域按下鼠标执行
     handleDown() {
       this.showMovableLine = true
     },
+    // 移动参考线执行
     handleMove(line) {
-      this.movableLine = line
-    },
-    handleUp(line) {
       this.movableLine = { ...line, value: this.getValue(line) }
+    },
+    // 刻度区域按下后释放鼠标执行
+    handleUp(line) {
+      this.showLines = true
       if (line.canAdded) this.lines.push(this.movableLine)
 
       this.showMovableLine = false
       this.movableLine = { ...this.movableLine, left: -1, top: -1 }
     },
 
+    // 根据线一些信息计算刻度值
     getValue(line) {
       const { left, top, vertical, start } = line
       const startValue = start / this.scale
-
-      return ((vertical ? left : top) - 20) / this.scale + startValue
+      const value =
+        ((vertical ? left : top) - this.thick) / this.scale + startValue
+      return Math.round((value * 10).toFixed(1)) / 10
     },
 
+    // 参考线鼠标按下执行
     handleLineDown(line) {
       this.movableLine = line
       this.showMovableLine = true
     },
+    // 参考线鼠标抬起执行
     handleLineUp(line, index) {
-      this.movableLine = { ...line, value: this.getValue(line) }
-
+      this.showLines = true
       if (line.canRemoved) this.lines.splice(index, 1)
       else this.lines.splice(index, 1, this.movableLine)
 
@@ -113,22 +263,30 @@ export default {
   },
 
   mounted() {
-    this.getContentHW()
-    this.getParentHW()
+    this.$nextTick(this.setScroll)
   },
 
   render() {
     return (
-      <div class="ruler">
-        <div class="corner" on-click={this.handleCornerClick} />
+      <div class="ruler" style={this.styles}>
+        <div
+          class="corner"
+          style={this.cornerStyles}
+          on-click={this.handleCornerClick}
+        />
 
         <RulerTick
           class="horizontal-ruler-tick"
-          width={this.width}
-          height={this.height}
-          startX={this.startX}
-          startY={this.startY}
+          width={this.tickWidth}
+          height={this.thick}
+          startX={this.sx}
+          startY={this.sy}
           scale={this.scale}
+          thick={this.thick}
+          tickBackground={this.tickBackground}
+          tickLineColor={this.tickLineColor}
+          tickLine={this.tickLine}
+          tickColor={this.tickColor}
           on-down={this.handleDown}
           on-move={this.handleMove}
           on-up={this.handleUp}
@@ -136,11 +294,16 @@ export default {
         <RulerTick
           class="vertical-ruler-tick"
           vertical
-          width={this.width}
-          height={this.height}
-          startX={this.startX}
-          startY={this.startY}
+          width={this.thick}
+          height={this.tickHeight}
+          startX={this.sx}
+          startY={this.sy}
           scale={this.scale}
+          thick={this.thick}
+          tickBackground={this.tickBackground}
+          tickLineColor={this.tickLineColor}
+          tickLine={this.tickLine}
+          tickColor={this.tickColor}
           on-down={this.handleDown}
           on-move={this.handleMove}
           on-up={this.handleUp}
@@ -149,15 +312,19 @@ export default {
         {this.lines.map((line, index) => (
           <RulerLine
             vShow={this.showLines}
-            ref={'rulerLine' + index}
-            key={'rulerLine' + index}
+            key={'rl' + index}
             line={line}
             id={index}
             value={line.value}
             vertical={line.vertical}
             scale={this.scale}
-            startX={this.startX}
-            startY={this.startY}
+            startX={this.sx}
+            startY={this.sy}
+            thick={this.thick}
+            indicatorBackground={this.indicatorBackground}
+            indicatorColor={this.indicatorColor}
+            lineColor={this.lineColor}
+            lineThick={this.lineThick}
             on-down={this.handleLineDown}
             on-move={this.handleMove}
             on-up={this.handleLineUp}
@@ -165,30 +332,27 @@ export default {
         ))}
         <RulerLine
           movable
-          ref="movableLine"
           vertical={this.movableLine.vertical}
           vShow={this.showMovableLine}
           scale={this.scale}
           line={this.movableLine}
-          startX={this.startX}
-          startY={this.startY}
+          startX={this.sx}
+          startY={this.sy}
+          thick={this.thick}
+          movableLineColor={this.movableLineColor}
+          movableLineThick={this.movableLineThick}
+          mlIndicatorBackground={this.mlIndicatorBackground}
+          mlIndicatorColor={this.mlIndicatorColor}
+          value={this.movableLine.value}
         />
-        {/* <div class="movable-line" /> */}
 
         <div
-          ref="rulerContent"
+          ref="rc"
           class="ruler-content"
           on-wheel={this.handleWheel}
           on-scroll={this.handleScroll}
         >
-          <div
-            ref="slotWrap"
-            class="slot-wrap"
-            style={{
-              width: this.slotWrapWidth + 'px',
-              height: this.slotWrapHeight + 'px'
-            }}
-          >
+          <div class="slot-wrap" style={this.slotWrapStyles}>
             {this.$slots.default}
           </div>
         </div>
@@ -203,29 +367,21 @@ export default {
   width: 100%;
   height: 100%;
   position: relative;
-  padding-top: 20px;
-  padding-left: 20px;
   box-sizing: border-box;
   overflow: hidden;
   .corner {
     position: absolute;
-    width: 20px;
-    height: 20px;
     top: 0;
     left: 0;
-    background-color: red;
     z-index: 2023;
+    cursor: pointer;
   }
   .horizontal-ruler-tick {
     position: absolute;
-    top: 0;
-    left: 20px;
     z-index: 2023;
   }
   .vertical-ruler-tick {
     position: absolute;
-    left: 0;
-    top: 20px;
     z-index: 2023;
   }
 
@@ -236,7 +392,6 @@ export default {
     overflow: scroll;
     & > div {
       position: relative;
-      background-color: #f3f3f3;
       & > div {
         position: absolute;
         left: 0;
