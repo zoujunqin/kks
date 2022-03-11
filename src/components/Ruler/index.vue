@@ -2,8 +2,7 @@
 import RulerTick from './RulerTick.vue'
 import RulerLine from './RulerLine'
 /**
- * @componentName 标尺组件
- * @desc 默认的 slot 只能是一个子节点
+ * @desc 标尺组件 默认的 slot 只能是一个子节点
  * @property {Number} thick 标尺左上角交叉处的宽度和高度
  * @property {Number} slotWidth slot容器的宽度，一般为 content 的 2倍
  * @property {Number} slotHeight slot容器的高度，一般为 content 的 2倍
@@ -163,10 +162,22 @@ export default {
         background: this.slotBackground
       }
     },
+    cornerIcon() {
+      return this.showLines ? 'visible' : 'invisible'
+    },
+    cornerIconSize() {
+      return this.thick / 2 + 5
+    },
+    cornerIconStyles() {
+      return {
+        color: this.showLines ? '#055AF9' : '#3e3d3d'
+      }
+    },
     cornerStyles() {
       return {
         width: `${this.thick}px`,
         height: `${this.thick}px`,
+        'line-height': `${this.thick}px`,
         background: this.cornerBackground
       }
     },
@@ -234,7 +245,7 @@ export default {
       if (line.canAdded) this.lines.push(this.movableLine)
 
       this.showMovableLine = false
-      this.movableLine = { ...this.movableLine, left: -1, top: -1 }
+      this.movableLine = { ...this.movableLine, left: -100, top: -100 }
     },
 
     // 根据线一些信息计算刻度值
@@ -258,7 +269,7 @@ export default {
       else this.lines.splice(index, 1, this.movableLine)
 
       this.showMovableLine = false
-      this.movableLine = { ...this.movableLine, left: -1, top: -1 }
+      this.movableLine = { ...this.movableLine, left: -100, top: -100 }
     }
   },
 
@@ -273,7 +284,13 @@ export default {
           class="corner"
           style={this.cornerStyles}
           on-click={this.handleCornerClick}
-        />
+        >
+          <SvgIcon
+            iconClass={this.cornerIcon}
+            size={this.cornerIconSize}
+            style={this.cornerIconStyles}
+          />
+        </div>
 
         <RulerTick
           class="horizontal-ruler-tick"
@@ -375,6 +392,7 @@ export default {
     left: 0;
     z-index: 2023;
     cursor: pointer;
+    text-align: center;
   }
   .horizontal-ruler-tick {
     position: absolute;

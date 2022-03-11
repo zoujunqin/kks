@@ -31,6 +31,9 @@ module.exports = {
     : configureWebpackConfig,
 
   chainWebpack(config) {
+    config.plugins.delete('prefetch')
+    config.plugins.delete('preload')
+
     config.when(envIsProd, (config) => {
       config.plugin('dll-reference-plugin').use(webpack.DllReferencePlugin, [
         {
@@ -80,18 +83,13 @@ module.exports = {
  * @return {*}
  */
 const createSvgSpriteLoader = (config) => {
-  config.module.rule('svg').exclude.add(resolve('src/icons')).end()
-  config.module
-    .rule('icons')
-    .test(/\.svg$/)
-    .include.add(resolve('src/icons'))
-    .end()
-    .use('svg-sprite-loader')
-    .loader('svg-sprite-loader')
-    .options({
-      symbolId: 'icon-[name]'
-    })
-    .end()
+  const svgRule = config.module.rule('svg')
+  // 清除已有的所有 loader。
+  // 如果你不这样做，接下来的 loader 会附加在该规则现有的 loader 之后。
+  svgRule.uses.clear()
+  svgRule.use('svg-sprite-loader').loader('svg-sprite-loader').options({
+    symbolId: 'icon-[name]'
+  })
 }
 
 /**

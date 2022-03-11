@@ -1,6 +1,7 @@
 import '@/auto/index'
 import '@/http/http'
 import '@/styles/global.scss'
+import '@/icons/index'
 // import '@/auto/mock'
 import Vue from 'vue'
 import App from './App.vue'

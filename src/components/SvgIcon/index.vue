@@ -6,7 +6,6 @@
 
 <script>
 export default {
-  global: true,
   name: 'SvgIcon',
   props: {
     iconClass: {
