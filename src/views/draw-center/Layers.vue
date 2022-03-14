@@ -1,7 +1,10 @@
 <script>
+import Line from '@/components/Widgets/Line/index'
+import { state } from '@/components/Setup/Generator/observer'
 export default {
   render() {
-    return <div></div>
+    console.log(state.form)
+    return <Line attrs={state.form}></Line>
   }
 }
 </script>

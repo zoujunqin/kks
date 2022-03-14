@@ -166,7 +166,7 @@ export default {
       return this.showLines ? 'visible' : 'invisible'
     },
     cornerIconSize() {
-      return this.thick / 2 + 5
+      return this.thick / 2 + 5 + 'px'
     },
     cornerIconStyles() {
       return {

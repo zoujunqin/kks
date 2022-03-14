@@ -19,8 +19,15 @@ export default {
   name: 'ChartLine',
 
   props: {
-    options: Object
+    options: Object,
+    inputValue: String
   },
+
+  // watch: {
+  //   inputValue() {
+  //     console.log('inputValue')
+  //   }
+  // },
 
   data() {
     return {
@@ -29,7 +36,9 @@ export default {
   },
 
   render() {
-    return <Echart options={this.chartOption}></Echart>
+    return (
+      <Echart options={this.chartOption} width="200px" height="200px"></Echart>
+    )
   }
 }
 </script>

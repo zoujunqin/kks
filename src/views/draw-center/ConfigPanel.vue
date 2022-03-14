@@ -1,11 +1,17 @@
 <script>
+import Generator from '@/components/Setup/Generator'
+import { option } from '@/components/Widgets/Line/setup'
 export default {
-  props: {
-    setup: Object
-  },
+  // props: {
+  //   setup: Object
+  // },
 
   render() {
-    return <div class="config-panel"></div>
+    return (
+      <div class="config-panel">
+        <Generator setup={option.setup} />
+      </div>
+    )
   }
 }
 </script>
