@@ -1,10 +1,33 @@
 <script>
 import Ruler from '@/components/Ruler/index'
 export default {
+  data() {
+    return {
+      width: 0,
+      height: 0
+    }
+  },
+
+  methods: {
+    getHW() {
+      this.width = this.$el.clientWidth
+      this.height = this.$el.clientHeight
+    }
+  },
+
+  mounted() {
+    this.getHW()
+    window.addEventListener('resize', this.getHW)
+  },
+
+  beforeDestroy() {
+    window.removeEventListener('resize', this.getHW)
+  },
+
   render() {
     return (
       <div class="canvas-area">
-        <Ruler>
+        <Ruler width={this.width} height={this.height}>
           <div class="content"></div>
         </Ruler>
       </div>

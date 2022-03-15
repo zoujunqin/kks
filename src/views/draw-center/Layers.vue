@@ -1,10 +1,11 @@
 <script>
 import Line from '@/components/Widgets/Line/index'
-import { state } from '@/components/Setup/Generator/observer'
 export default {
+  props: {
+    option: Object
+  },
   render() {
-    console.log(state.form)
-    return <Line attrs={state.form}></Line>
+    return <Line value={this.option}></Line>
   }
 }
 </script>

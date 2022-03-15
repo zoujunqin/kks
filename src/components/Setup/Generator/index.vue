@@ -1,5 +1,4 @@
 <script>
-import { mutations } from './observer'
 export default {
   props: {
     setup: Array
@@ -25,17 +24,19 @@ export default {
   },
 
   watch: {
-    form(n) {
-      console.log(n)
-      mutations.addProp(n)
+    form: {
+      handler(n) {
+        console.log(n)
+        this.$emit('change', n)
+      },
+      deep: true
     }
   },
 
   methods: {
     createNode(data) {
       return data.map((su) => {
-        const hasChild = su.children
-        if (hasChild) {
+        if (su.children) {
           const collapseItems = (
             <el-collapse-item title={su.label}>
               {this.createNode(su.children)}
@@ -56,7 +57,7 @@ export default {
 
   render() {
     return (
-      <el-form vModel={this.form}>
+      <el-form>
         <el-collapse>{this.createNode(this.fsetup)}</el-collapse>
       </el-form>
     )

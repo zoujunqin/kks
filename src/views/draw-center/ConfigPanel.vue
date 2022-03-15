@@ -1,15 +1,20 @@
 <script>
 import Generator from '@/components/Setup/Generator'
-import { option } from '@/components/Widgets/Line/setup'
 export default {
-  // props: {
-  //   setup: Object
-  // },
+  props: {
+    option: Object
+  },
+
+  methods: {
+    handleChange(v) {
+      this.$emit('change', v)
+    }
+  },
 
   render() {
     return (
       <div class="config-panel">
-        <Generator setup={option.setup} />
+        <Generator setup={this.option.setup} onChange={this.handleChange} />
       </div>
     )
   }

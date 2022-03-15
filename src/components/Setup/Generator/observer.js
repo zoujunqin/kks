@@ -1,11 +1,8 @@
 import Vue from 'vue'
-export const state = Vue.observable({
-  form: {}
-})
+export const state = Vue.observable({})
 
 export const mutations = {
-  addProp(value) {
-    console.log('observer', value)
-    state.form = value
+  addProp(prop, value) {
+    state[prop] = value
   }
 }

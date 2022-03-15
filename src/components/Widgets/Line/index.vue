@@ -1,4 +1,5 @@
 <script>
+import { setupMapToSD } from '@/utils/widgets'
 const chartOption = {
   xAxis: {
     type: 'category',
@@ -19,25 +20,42 @@ export default {
   name: 'ChartLine',
 
   props: {
-    options: Object,
-    inputValue: String
+    value: Object
   },
 
-  // watch: {
-  //   inputValue() {
-  //     console.log('inputValue')
-  //   }
-  // },
+  watch: {
+    value: {
+      handler() {
+        // console.log(this.value)
+        const { setupStyle, setupDataSource } = setupMapToSD(
+          this.value,
+          'children'
+        )
+        console.log(setupStyle)
+        // console.log(setupDataSource)
+        this.styles = setupStyle
+        this.dataSource = setupDataSource
+      },
+      deep: true
+    }
+  },
 
   data() {
     return {
-      chartOption
+      chartOption,
+      styles: {},
+      dataSource: {}
     }
   },
 
   render() {
     return (
-      <Echart options={this.chartOption} width="200px" height="200px"></Echart>
+      <Echart
+        options={this.chartOption}
+        style={this.styles}
+        width="200px"
+        height="200px"
+      ></Echart>
     )
   }
 }

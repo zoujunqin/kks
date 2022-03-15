@@ -5,60 +5,19 @@ export const option = {
   setup: [
     {
       type: 'el-input',
-      label: '字体大小',
-      mapping: 'options.inputValue',
+      label: '高度',
+      mapping: 'style.height',
       props: {},
       value: '',
-      children: null,
-      required: false
-    },
-    {
-      label: '字体大小',
-      children: [
-        {
-          type: 'el-input',
-          label: '字体大小123',
-          mapping: 'inputValue',
-          props: {},
-          value: '',
-          children: [
-            {
-              type: 'el-input',
-              label: '字体大小123fff',
-              mapping: 'inputValue',
-              props: {},
-              value: '',
-              children: null,
-              required: false
-            },
-            {
-              type: 'el-input',
-              label: '字体大小3456aaaa',
-              mapping: 'inputValue',
-              props: {},
-              value: '',
-              children: null,
-              required: false
-            }
-          ],
-          required: false
-        },
-        {
-          type: 'el-input',
-          label: '字体大小3456',
-          mapping: 'inputValue',
-          props: {},
-          value: '',
-          children: null,
-          required: false
-        }
-      ]
+      unit: 'px',
+      required: false,
+      configurable: true
     }
   ],
 
-  setupSeinor: {},
-  setupData: {},
-  setupPosition: {}
+  setupSeinor: [],
+  setupData: [],
+  setupPosition: []
 }
 
 export default new Widget(Wrap.name, option, true)
