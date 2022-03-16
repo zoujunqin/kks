@@ -21,20 +21,44 @@ export default {
           if (item.mapping === key) item.value = v[key]
         }
       }
+    },
+    // 窗口改变触发各组件resize方法
+    resize() {
+      const {
+        Layers,
+        CommonUse,
+        AddedLayers,
+        CanvasArea,
+        ConfigPanel
+      } = this.$refs
+      Layers.resize && Layers.resize()
+      CommonUse.resize && CommonUse.resize()
+      AddedLayers.resize && AddedLayers.resize()
+      CanvasArea.resize && CanvasArea.resize()
+      ConfigPanel.resize && ConfigPanel.resize()
     }
+  },
+
+  mounted() {
+    window.addEventListener('resize', this.resize)
+  },
+
+  beforeDestroy() {
+    window.addEventListener('resize', this.resize)
   },
 
   render() {
     return (
       <div class="draw-center">
         <div class="top">
-          <Layers option={this.option}></Layers>
-          <CommonUse></CommonUse>
+          <Layers ref="Layers" option={this.option}></Layers>
+          <CommonUse ref="CommonUse"></CommonUse>
         </div>
         <div class="bottom">
-          <AddedLayers></AddedLayers>
-          <CanvasArea></CanvasArea>
+          <AddedLayers ref="AddedLayers"></AddedLayers>
+          <CanvasArea ref="CanvasArea"></CanvasArea>
           <ConfigPanel
+            ref="ConfigPanel"
             option={this.option}
             onChange={this.handleChange}
           ></ConfigPanel>

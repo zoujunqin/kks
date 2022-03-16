@@ -37,11 +37,11 @@ export default {
     },
     slotWidth: {
       type: Number,
-      default: 3000
+      default: 2000
     },
     slotHeight: {
       type: Number,
-      default: 1500
+      default: 1000
     },
     slotBackground: {
       type: String,
@@ -65,7 +65,7 @@ export default {
     },
     startX: {
       type: Number,
-      default: -120
+      default: 0
     },
     startY: {
       type: Number,
@@ -214,6 +214,17 @@ export default {
         scrollLeft - (this.slotWidth - this.contentWidth * this.scale) / 2
       this.sy =
         scrollTop - (this.slotHeight - this.contentHeight * this.scale) / 2
+
+      const osx = scrollLeft - (this.slotWidth - this.contentWidth) / 2
+      const osy = scrollTop - (this.slotHeight - this.contentHeight) / 2
+
+      this.$emit('transform', {
+        sx: this.sx,
+        sy: this.sy,
+        scale: this.scale,
+        osx,
+        osy
+      })
     },
     // 放大缩小执行
     handleWheel(e) {
