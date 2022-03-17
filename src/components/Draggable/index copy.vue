@@ -17,9 +17,6 @@
  * @property {String} guardLineBackground 辅助线背景
  * @property {String} guardIndicatorColor 辅助线文字颜色
  * @property {Number} guardIndicatorFontSize 辅助线文字大小
- * @property {Array} adsorpLefts 需要左吸附的位置
- * @property {Array} adsorpTops 需要上吸附的位置
- * @property {Number} adsorptionDistance 距离吸附位置多少距离会被吸附
  */
 export default {
   props: {
@@ -69,18 +66,6 @@ export default {
     guardIndicatorFontSize: {
       type: Number,
       default: 12
-    },
-    adsorpLefts: {
-      type: Array,
-      default: () => []
-    },
-    adsorpTops: {
-      type: Array,
-      default: () => []
-    },
-    adsorptionDistance: {
-      type: Number,
-      default: 5
     }
   },
 
@@ -162,15 +147,18 @@ export default {
       return +(px / this.scale).toFixed(1)
     },
     pointUpListener() {
-      this.pointMousedown = null
-      window.removeEventListener('mousemove', this.pointMoveListener)
+      const { stretchDirection } = this.pointMousedown
+      window.removeEventListener(
+        'mousemove',
+        this[stretchDirection + 'PointMoveListener']
+      )
       window.removeEventListener('mouseup', this.pointUpListener)
+      this.pointMousedown = null
     },
-    pointMoveListener(e) {
-      console.log('pointMoveListener')
+    leftTopPointMoveListener(e) {
       e.preventDefault()
+
       const {
-        stretchDirection,
         width: owidth,
         height: oheight,
         left: oleft,
@@ -181,45 +169,115 @@ export default {
       // 以下计算都是基于物理像素
       const left = this.pxDivideScale(pageX - this.offsetX)
       const top = this.pxDivideScale(pageY - this.offsetY)
-      const diffWidth = left - oleft
-      const diffHeight = top - otop
+      const diffWidth = oleft - left
+      const diffHeight = otop - top
 
-      switch (stretchDirection) {
-        case 'left-top-stretch-point':
-          this.usedLeft = left
-          this.usedTop = top
-          this.usedWidth = owidth - diffWidth
-          this.usedHeight = oheight - diffHeight
-          break
-        case 'top-stretch-point':
-          this.usedTop = top
-          this.usedHeight = oheight - diffHeight
-          break
-        case 'right-top-stretch-point':
-          this.usedTop = top
-          this.usedWidth = diffWidth
-          this.usedHeight = oheight - diffHeight
-          break
-        case 'left-stretch-point':
-          this.usedLeft = left
-          this.usedWidth = owidth - diffWidth
-          break
-        case 'right-stretch-point':
-          this.usedWidth = diffWidth
-          break
-        case 'left-bottom-stretch-point':
-          this.usedLeft = left
-          this.usedWidth = owidth - diffWidth
-          this.usedHeight = diffHeight
-          break
-        case 'bottom-stretch-point':
-          this.usedHeight = diffHeight
-          break
-        case 'right-bottom-stretch-point':
-          this.usedWidth = diffWidth
-          this.usedHeight = diffHeight
-          break
-      }
+      this.usedLeft = left
+      this.usedTop = top
+      this.usedWidth = owidth + diffWidth
+      this.usedHeight = oheight + diffHeight
+    },
+    topPointMoveListener(e) {
+      e.preventDefault()
+
+      const { height: oheight, top: otop } = this.pointMousedown
+      const { pageY } = e
+      // 以下计算都是基于物理像素
+      const top = this.pxDivideScale(pageY - this.offsetY)
+      const diffHeight = otop - top
+      this.usedTop = top
+      this.usedHeight = oheight + diffHeight
+    },
+    rightTopPointMoveListener(e) {
+      e.preventDefault()
+
+      const {
+        width: owidth,
+        height: oheight,
+        left: oleft,
+        top: otop
+      } = this.pointMousedown
+      const { pageX, pageY } = e
+
+      // 以下计算都是基于物理像素
+      const left = this.pxDivideScale(pageX - this.offsetX) - owidth
+      const top = this.pxDivideScale(pageY - this.offsetY)
+      const diffWidth = oleft - left
+      const diffHeight = otop - top
+
+      this.usedTop = top
+      this.usedWidth = owidth - diffWidth
+      this.usedHeight = oheight + diffHeight
+    },
+    leftPointMoveListener(e) {
+      e.preventDefault()
+
+      const { width: owidth, left: oleft } = this.pointMousedown
+      const { pageX } = e
+
+      // 以下计算都是基于物理像素
+      const left = this.pxDivideScale(pageX - this.offsetX)
+      const diffWidth = oleft - left
+      this.usedLeft = left
+      this.usedWidth = owidth + diffWidth
+    },
+    rightPointMoveListener(e) {
+      e.preventDefault()
+
+      const { width: owidth, left: oleft } = this.pointMousedown
+      const { pageX } = e
+
+      // 以下计算都是基于物理像素
+      const left = this.pxDivideScale(pageX - this.offsetX) - owidth
+      const diffWidth = oleft - left
+      this.usedWidth = owidth - diffWidth
+    },
+    leftBottomPointMoveListener(e) {
+      e.preventDefault()
+
+      const {
+        width: owidth,
+        height: oheight,
+        left: oleft,
+        top: otop
+      } = this.pointMousedown
+      const { pageX, pageY } = e
+      // 以下计算都是基于物理像素
+      const left = this.pxDivideScale(pageX - this.offsetX)
+      const top = this.pxDivideScale(pageY - this.offsetY) - oheight
+      const diffWidth = oleft - left
+      const diffHeight = otop - top
+      this.usedLeft = left
+      this.usedWidth = owidth + diffWidth
+      this.usedHeight = oheight - diffHeight
+    },
+    bottomPointMoveListener(e) {
+      e.preventDefault()
+
+      const { height: oheight, top: otop } = this.pointMousedown
+      const { pageY } = e
+      // 以下计算都是基于物理像素
+      const top = this.pxDivideScale(pageY - this.offsetY) - oheight
+      const diffHeight = otop - top
+      this.usedHeight = oheight - diffHeight
+    },
+    rightBottomPointMoveListener(e) {
+      e.preventDefault()
+
+      const {
+        width: owidth,
+        height: oheight,
+        left: oleft,
+        top: otop
+      } = this.pointMousedown
+      const { pageX, pageY } = e
+      // 以下计算都是基于物理像素
+      const left = this.pxDivideScale(pageX - this.offsetX) - owidth
+      const top = this.pxDivideScale(pageY - this.offsetY) - oheight
+      const diffWidth = oleft - left
+      const diffHeight = otop - top
+      this.usedWidth = owidth - diffWidth
+      this.usedHeight = oheight - diffHeight
     },
     handlePointMousedown(stretchDirection, e) {
       e.stopPropagation()
@@ -227,61 +285,62 @@ export default {
       const { offsetWidth, offsetHeight, offsetLeft, offsetTop } = this.$el
       this.pointMousedown = {
         e,
-        stretchDirection,
         width: offsetWidth,
         height: offsetHeight,
         left: offsetLeft,
         top: offsetTop
       }
-      window.addEventListener('mousemove', this.pointMoveListener)
+      window.addEventListener(
+        'mousemove',
+        this[stretchDirection + 'PointMoveListener']
+      )
       window.addEventListener('mouseup', this.pointUpListener)
     },
     // 创建拉伸点
     createStretchPoint() {
       const points = [
-        'left-top-stretch-point',
-        'top-stretch-point',
-        'right-top-stretch-point',
-        'left-stretch-point',
-        'right-stretch-point',
-        'left-bottom-stretch-point',
-        'bottom-stretch-point',
-        'right-bottom-stretch-point'
+        {
+          class: 'left-top-stretch-point',
+          mousedown: this.handlePointMousedown.bind(this, 'leftTop')
+        },
+        {
+          class: 'top-stretch-point',
+          mousedown: this.handlePointMousedown.bind(this, 'top')
+        },
+        {
+          class: 'right-top-stretch-point',
+          mousedown: this.handlePointMousedown.bind(this, 'rightTop')
+        },
+        {
+          class: 'left-stretch-point',
+          mousedown: this.handlePointMousedown.bind(this, 'left')
+        },
+        {
+          class: 'right-stretch-point',
+          mousedown: this.handlePointMousedown.bind(this, 'right')
+        },
+        {
+          class: 'left-bottom-stretch-point',
+          mousedown: this.handlePointMousedown.bind(this, 'leftBottom')
+        },
+        {
+          class: 'bottom-stretch-point',
+          mousedown: this.handlePointMousedown.bind(this, 'bottom')
+        },
+        {
+          class: 'right-bottom-stretch-point',
+          mousedown: this.handlePointMousedown.bind(this, 'rightBottom')
+        }
       ]
       return points.map((point) => (
         <i
-          class={['stretch-point', point]}
+          class={['stretch-point', point.class]}
           style={this.stretchPointStyles}
-          onMousedown={this.handlePointMousedown.bind(this, point)}
+          onMousedown={point.mousedown}
         />
       ))
     },
 
-    // 左吸附
-    adsorptionLeft(left) {
-      for (const adsorpLeft of this.adsorpLefts) {
-        const diff = left - this.adsorptionDistance
-        if (
-          diff <= adsorpLeft &&
-          diff >= adsorpLeft - this.adsorptionDistance
-        ) {
-          left = adsorpLeft
-          break
-        }
-      }
-      return left
-    },
-    // 上吸附
-    adsorptionTop(top) {
-      for (const adsorpTop of this.adsorpLefts) {
-        const diff = top - this.adsorptionDistance
-        if (diff <= adsorpTop && diff >= adsorpTop - this.adsorptionDistance) {
-          top = adsorpTop
-          break
-        }
-      }
-      return top
-    },
     upListener() {
       this.mousedown = null
       window.removeEventListener('mousemove', this.moveListener)
@@ -300,16 +359,14 @@ export default {
       const left = this.pxDivideScale(
         pageX - ooffsetX * this.scale - this.offsetX
       )
-      this.usedLeft = this.adsorptionLeft(
+      this.usedLeft =
         left <= leftLimit ? leftLimit : left >= rightLimit ? rightLimit : left
-      )
 
       const top = this.pxDivideScale(
         pageY - ooffsetY * this.scale - this.offsetY
       )
-      this.usedTop = this.adsorptionTop(
+      this.usedTop =
         top <= topLimit ? topLimit : top >= bottomLimit ? bottomLimit : top
-      )
     },
     handleMousedown(e) {
       e.preventDefault()
@@ -352,8 +409,6 @@ export default {
   position: absolute;
   background: rgba(0, 0, 0, 0.4);
   cursor: move;
-  min-width: 5px;
-  min-height: 5px;
 
   .guard {
     position: absolute;

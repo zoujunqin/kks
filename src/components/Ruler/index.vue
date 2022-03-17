@@ -4,8 +4,8 @@ import RulerLine from './RulerLine'
 /**
  * @desc 标尺组件 默认的 slot 只能是一个子节点
  * @property {Number} thick 标尺左上角交叉处的宽度和高度
- * @property {Number} slotWidth slot容器的宽度，一般为 content 的 2倍
- * @property {Number} slotHeight slot容器的高度，一般为 content 的 2倍
+ * @property {Number} slotWidth slot容器的宽度，略大于 content
+ * @property {Number} slotHeight slot容器的高度，略大于 content
  * @property {String} slotBackground slot容器的背景色
  * @property {Number} contentWidth 内容宽度
  * @property {Number} contentHeight 内容高度
@@ -253,7 +253,10 @@ export default {
     // 刻度区域按下后释放鼠标执行
     handleUp(line) {
       this.showLines = true
-      if (line.canAdded) this.lines.push(this.movableLine)
+      if (line.canAdded) {
+        this.lines.push(this.movableLine)
+        this.$emit('lineUpdate', this.lines)
+      }
 
       this.showMovableLine = false
       this.movableLine = { ...this.movableLine, left: -100, top: -100 }
@@ -278,6 +281,7 @@ export default {
       this.showLines = true
       if (line.canRemoved) this.lines.splice(index, 1)
       else this.lines.splice(index, 1, this.movableLine)
+      this.$emit('lineUpdate', this.lines)
 
       this.showMovableLine = false
       this.movableLine = { ...this.movableLine, left: -100, top: -100 }
