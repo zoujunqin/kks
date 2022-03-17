@@ -44,10 +44,12 @@ export default {
     },
     // 标尺参考线更新触发
     handleRulerLineUpdate(lines) {
+      this.adsorpLefts = []
+      this.adsorpTops = []
       for (const line of lines) {
         if (line.vertical) {
-          this.adsorpLefts.push(line.left - this.rulerTick)
-        } else this.adsorpTops.push(line.top - this.rulerTick)
+          this.adsorpLefts.push(line.value)
+        } else this.adsorpTops.push(line.value)
       }
     },
 
