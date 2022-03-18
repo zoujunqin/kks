@@ -1,23 +1,34 @@
 <script>
 import Ruler from '@/components/Ruler/index'
 import Draggable from '@/components/Draggable/index'
+import { state } from './observer'
+import { noop } from '@/utils'
+import { calcWidgetPosition } from '@/utils/widgets'
+import { mutations } from './observer'
+
+import Line from '@/components/Widgets/Line/index'
 export default {
   data() {
     return {
       rulerTick: 20,
-      width: 0,
-      height: 0,
-      // content 距离视口 x
-      offsetX: 0,
-      // content 距离视口 y
-      offsetY: 0,
+      rootWidth: 0,
+      rootHeight: 0,
+
       scale: 1,
+      offsetX: 0, // content 距离视口 x
+      offsetY: 0, // content 距离视口 y
       contentWidth: 1600,
       contentHeight: 800,
 
-      // 吸附位置，根据标尺参考线生成
-      adsorpLefts: [],
-      adsorpTops: []
+      draggableGap: 5,
+      adsorptionDistance: 5,
+
+      adsorpLefts: [], // 左吸附位置，根据标尺参考线生成
+      adsorpTops: [], // 上吸附位置，根据标尺参考线生成
+
+      widgets: [], // 存放添加到拖拽区域的部件
+
+      seizeSeatStyles: {}
     }
   },
 
@@ -27,13 +38,18 @@ export default {
         width: this.contentWidth + 'px',
         height: this.contentHeight + 'px'
       }
+    },
+
+    isWidgetSelected() {
+      return state.isWidgetSelected
     }
   },
 
   methods: {
-    getHW() {
-      this.width = this.$el.clientWidth
-      this.height = this.$el.clientHeight
+    // 标尺参考线更新触发
+    getHeightWidth() {
+      this.rootWidth = this.$el.clientWidth
+      this.rootHeight = this.$el.clientHeight
     },
 
     // 标尺滚动和缩放触发
@@ -42,7 +58,6 @@ export default {
       this.offsetY = -sy + 80
       this.scale = scale
     },
-    // 标尺参考线更新触发
     handleRulerLineUpdate(lines) {
       this.adsorpLefts = []
       this.adsorpTops = []
@@ -52,9 +67,53 @@ export default {
         } else this.adsorpTops.push(line.value)
       }
     },
+    handleContentMouseenter() {
+      mutations.setInCanvasArea(true)
+      const rawMousemove = document.onmousemove
+      document.onmousemove = (e) => {
+        rawMousemove && rawMousemove.call(document, e)
+        if (!state.isInCanvasArea) return
+        const { left, top } = calcWidgetPosition({
+          e,
+          width: 300,
+          height: 200,
+          parentWidth: this.contentWidth,
+          parentHeight: this.contentHeight,
+          gap: this.draggableGap,
+          parentOffsetX: this.offsetX,
+          parentOffsetY: this.offsetY,
+          addis: this.adsorptionDistance,
+          adsorpLefts: this.adsorpLefts,
+          adsorpTops: this.adsorpTops,
+          scale: this.scale,
+          cursorOffsetX: 0,
+          cursorOffsetY: 0
+        })
+
+        this.seizeSeatStyles = {
+          left: left + 'px',
+          top: top + 'px',
+          // display: 'unset',
+          opacity: 1
+        }
+      }
+    },
+    handleContentMouseleave() {
+      mutations.setInCanvasArea(false)
+      // this.seizeSeatStyles.display = 'none'
+      this.seizeSeatStyles.opacity = 0
+    },
+    handleContentMouseup() {
+      // this.seizeSeatStyles.display = 'none'
+      this.seizeSeatStyles.opacity = 0
+      this.widgets.push({
+        left: parseFloat(this.seizeSeatStyles.left),
+        top: parseFloat(this.seizeSeatStyles.top)
+      })
+    },
 
     resize() {
-      this.getHW()
+      this.getHeightWidth()
     }
   },
 
@@ -67,8 +126,8 @@ export default {
       <div class="canvas-area">
         <Ruler
           thick={this.rulerThick}
-          width={this.width}
-          height={this.height}
+          width={this.rootWidth}
+          height={this.rootHeight}
           slotWidth={1610}
           slotHeight={1000}
           contentWidth={this.contentWidth}
@@ -76,20 +135,39 @@ export default {
           onTransform={this.handleTransform}
           onLineUpdate={this.handleRulerLineUpdate}
         >
-          <div class="content" style={this.contentStyles}>
-            <Draggable
-              left={0}
-              top={0}
-              width={200}
-              height={200}
-              offsetX={this.offsetX}
-              offsetY={this.offsetY}
-              scale={this.scale}
-              parentWidth={this.contentWidth}
-              parentHeight={this.contentHeight}
-              adsorpLefts={this.adsorpLefts}
-              adsorpTops={this.adsorpTops}
-            ></Draggable>
+          <div
+            class="content"
+            style={this.contentStyles}
+            onMouseenter={
+              this.isWidgetSelected ? this.handleContentMouseenter : noop
+            }
+            onMouseup={this.isWidgetSelected ? this.handleContentMouseup : noop}
+            onMouseleave={
+              this.isWidgetSelected ? this.handleContentMouseleave : noop
+            }
+          >
+            {this.widgets.map((widget) => (
+              <Draggable
+                left={widget.left}
+                top={widget.top}
+                width={200}
+                height={200}
+                gap={this.draggableGap}
+                offsetX={this.offsetX}
+                offsetY={this.offsetY}
+                scale={this.scale}
+                adsorptionDistance={this.adsorptionDistance}
+                parentWidth={this.contentWidth}
+                parentHeight={this.contentHeight}
+                adsorpLefts={this.adsorpLefts}
+                adsorpTops={this.adsorpTops}
+              >
+                <Line></Line>
+              </Draggable>
+            ))}
+
+            {/* 占位 */}
+            <div class="seize-seat" style={this.seizeSeatStyles}></div>
           </div>
         </Ruler>
       </div>
@@ -105,6 +183,18 @@ export default {
   .content {
     overflow: hidden;
     background-color: #a4d3e1;
+
+    .seize-seat {
+      // display: none;
+      opacity: 0;
+      position: absolute;
+      width: 300px;
+      height: 200px;
+      pointer-events: none;
+      background: #e3e6e8;
+      box-shadow: 0px 0px 4px -2px grey;
+      transition: opacity 0.5s ease;
+    }
   }
 }
 </style>

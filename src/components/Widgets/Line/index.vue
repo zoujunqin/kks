@@ -1,5 +1,5 @@
 <script>
-import { setupMapToSD } from '@/utils/widgets'
+import { setupTransform } from '@/utils/widgets'
 const chartOption = {
   xAxis: {
     type: 'category',
@@ -27,7 +27,7 @@ export default {
     value: {
       handler() {
         // console.log(this.value)
-        const { setupStyle, setupDataSource } = setupMapToSD(
+        const { setupStyle, setupDataSource } = setupTransform(
           this.value,
           'children'
         )
@@ -51,6 +51,7 @@ export default {
   render() {
     return (
       <Echart
+        draggable
         options={this.chartOption}
         style={this.styles}
         width="200px"

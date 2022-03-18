@@ -1,6 +1,6 @@
 <script>
 import { state } from './observer'
-import { noop } from './utils'
+import { noop } from '@/utils'
 export default {
   props: {
     id: Number,

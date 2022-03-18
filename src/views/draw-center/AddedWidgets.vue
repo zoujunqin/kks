@@ -1,13 +1,13 @@
 <script>
 export default {
   render() {
-    return <div class="added-layers"></div>
+    return <div class="added-widgets"></div>
   }
 }
 </script>
 
 <style scoped lang="scss">
-.added-layers {
+.added-widgets {
   width: 200px;
   height: 100%;
 }

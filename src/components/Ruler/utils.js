@@ -132,5 +132,3 @@ export function drawVerticalRuler(ctx, start, config) {
   ctx.closePath()
   ctx.setTransform(1, 0, 0, 1, 0, 0)
 }
-
-export function noop() {}

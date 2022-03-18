@@ -17,10 +17,12 @@
  * @property {String} guardLineBackground 辅助线背景
  * @property {String} guardIndicatorColor 辅助线文字颜色
  * @property {Number} guardIndicatorFontSize 辅助线文字大小
- * @property {Array} adsorpLefts 需要左吸附的位置
- * @property {Array} adsorpTops 需要上吸附的位置
+ * @property {Array}  adsorpLefts 需要左吸附的位置
+ * @property {Array}  adsorpTops 需要上吸附的位置
  * @property {Number} adsorptionDistance 距离吸附位置多少距离会被吸附
  */
+
+import { calcWidgetPosition, calcPosAtScale } from '@/utils/widgets'
 export default {
   props: {
     top: Number,
@@ -158,19 +160,15 @@ export default {
   },
 
   methods: {
-    pxDivideScale(px) {
-      return +(px / this.scale).toFixed(1)
-    },
     pointUpListener() {
       this.pointMousedown = null
       window.removeEventListener('mousemove', this.pointMoveListener)
       window.removeEventListener('mouseup', this.pointUpListener)
     },
     pointMoveListener(e) {
-      console.log('pointMoveListener')
       e.preventDefault()
       const {
-        stretchDirection,
+        sd,
         width: owidth,
         height: oheight,
         left: oleft,
@@ -179,12 +177,12 @@ export default {
       const { pageX, pageY } = e
 
       // 以下计算都是基于物理像素
-      const left = this.pxDivideScale(pageX - this.offsetX)
-      const top = this.pxDivideScale(pageY - this.offsetY)
+      const left = calcPosAtScale(pageX - this.offsetX, this.scale)
+      const top = calcPosAtScale(pageY - this.offsetY, this.scale)
       const diffWidth = left - oleft
       const diffHeight = top - otop
 
-      switch (stretchDirection) {
+      switch (sd) {
         case 'left-top-stretch-point':
           this.usedLeft = left
           this.usedTop = top
@@ -221,13 +219,13 @@ export default {
           break
       }
     },
-    handlePointMousedown(stretchDirection, e) {
+    handlePointMousedown(sd, e) {
       e.stopPropagation()
       e.preventDefault()
       const { offsetWidth, offsetHeight, offsetLeft, offsetTop } = this.$el
       this.pointMousedown = {
         e,
-        stretchDirection,
+        sd,
         width: offsetWidth,
         height: offsetHeight,
         left: offsetLeft,
@@ -257,31 +255,6 @@ export default {
       ))
     },
 
-    // 左吸附
-    adsorptionLeft(left) {
-      for (const adsorpLeft of this.adsorpLefts) {
-        const diff = left - this.adsorptionDistance
-        if (
-          diff <= adsorpLeft &&
-          diff >= adsorpLeft - this.adsorptionDistance
-        ) {
-          left = adsorpLeft
-          break
-        }
-      }
-      return left
-    },
-    // 上吸附
-    adsorptionTop(top) {
-      for (const adsorpTop of this.adsorpLefts) {
-        const diff = top - this.adsorptionDistance
-        if (diff <= adsorpTop && diff >= adsorpTop - this.adsorptionDistance) {
-          top = adsorpTop
-          break
-        }
-      }
-      return top
-    },
     upListener() {
       this.mousedown = null
       window.removeEventListener('mousemove', this.moveListener)
@@ -289,27 +262,27 @@ export default {
     },
     moveListener(e) {
       e.preventDefault()
-      const { e: oe, width: owidth, height: oheight } = this.mousedown
-      const { offsetX: ooffsetX, offsetY: ooffsetY } = oe
-      const { pageX, pageY } = e
-      const leftLimit = this.gap - owidth
-      const rightLimit = this.parentWidth - this.gap
-      const topLimit = this.gap - oheight
-      const bottomLimit = this.parentHeight - this.gap
-      // 在缩放下，offset表示的是真实的 px，处理后再计算 。然后转成真实的 px
-      const left = this.pxDivideScale(
-        pageX - ooffsetX * this.scale - this.offsetX
-      )
-      this.usedLeft = this.adsorptionLeft(
-        left <= leftLimit ? leftLimit : left >= rightLimit ? rightLimit : left
-      )
+      const { e: oe, width, height } = this.mousedown
+      const { offsetX: cursorOffsetX, offsetY: cursorOffsetY } = oe
 
-      const top = this.pxDivideScale(
-        pageY - ooffsetY * this.scale - this.offsetY
-      )
-      this.usedTop = this.adsorptionTop(
-        top <= topLimit ? topLimit : top >= bottomLimit ? bottomLimit : top
-      )
+      const { left, top } = calcWidgetPosition({
+        e,
+        width,
+        height,
+        parentWidth: this.parentWidth,
+        parentHeight: this.parentHeight,
+        gap: this.gap,
+        parentOffsetX: this.offsetX,
+        parentOffsetY: this.offsetY,
+        addis: this.adsorptionDistance,
+        adsorpLefts: this.adsorpLefts,
+        adsorpTops: this.adsorpTops,
+        scale: this.scale,
+        cursorOffsetX,
+        cursorOffsetY
+      })
+      this.usedLeft = left
+      this.usedTop = top
     },
     handleMousedown(e) {
       e.preventDefault()
@@ -341,6 +314,8 @@ export default {
             {this.usedTop}
           </span>
         </div>
+
+        {this.$slots.default}
       </div>
     )
   }
@@ -350,7 +325,7 @@ export default {
 <style lang="scss" scoped>
 .draggable-wrap {
   position: absolute;
-  background: rgba(0, 0, 0, 0.4);
+  // background: rgba(0, 0, 0, 0.4);
   cursor: move;
   min-width: 5px;
   min-height: 5px;
