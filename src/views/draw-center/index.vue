@@ -19,6 +19,14 @@ export default {
   },
 
   computed: {},
+  watch: {
+    option: {
+      handler() {
+        console.log('watch option')
+      },
+      deep: true
+    }
+  },
 
   methods: {
     handleMove(e, innerHTML) {
@@ -32,13 +40,6 @@ export default {
     },
     handleUp() {
       this.seizeSeatStyles.opacity = 0
-    },
-    handleChange(v) {
-      for (const key of Object.keys(v)) {
-        for (const item of this.option.setup) {
-          if (item.mapping === key) item.value = v[key]
-        }
-      }
     },
 
     // 窗口改变触发各组件resize方法
@@ -59,6 +60,7 @@ export default {
   },
 
   mounted() {
+    console.log(this)
     window.addEventListener('resize', this.resize)
   },
 
@@ -81,11 +83,7 @@ export default {
         <div class="bottom">
           <AddedWidgets ref="AddedWidgets"></AddedWidgets>
           <CanvasArea ref="CanvasArea"></CanvasArea>
-          <ConfigPanel
-            ref="ConfigPanel"
-            option={this.option}
-            onChange={this.handleChange}
-          ></ConfigPanel>
+          <ConfigPanel ref="ConfigPanel" option={this.option}></ConfigPanel>
         </div>
 
         {/* 拖拽占位, 模拟拖拽组件的视觉效果 */}

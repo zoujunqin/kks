@@ -1,20 +1,23 @@
 <script>
 import Generator from '@/components/Setup/Generator'
+import { state } from './observer'
 export default {
-  props: {
-    option: Object
+  data() {
+    return {}
   },
 
-  methods: {
-    handleChange(v) {
-      this.$emit('change', v)
+  computed: {
+    option() {
+      return state.activedWidget
     }
   },
+
+  methods: {},
 
   render() {
     return (
       <div class="config-panel">
-        <Generator setup={this.option.setup} onChange={this.handleChange} />
+        <Generator setup={this.option?.setup || []} />
       </div>
     )
   }
@@ -25,6 +28,6 @@ export default {
 .config-panel {
   width: 400px;
   height: 100%;
-  background-color: #3e3d3d;
+  background-color: #242a30;
 }
 </style>

@@ -1,7 +1,7 @@
-import Widget from '@/core/widget/widget'
-import Wrap from './index.vue'
-
 const option = {
+  name: 'EchartBarNegativeX',
+  component: () => import('./index.vue'),
+  type: 'echart',
   setup: [
     {
       type: 'el-input',
@@ -19,4 +19,4 @@ const option = {
   setupPosition: {}
 }
 
-export default new Widget(Wrap.name, option, true)
+export default option

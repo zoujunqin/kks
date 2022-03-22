@@ -4,6 +4,7 @@
  * @property {Number} left 定位 left
  * @property {Number} width 组件宽度
  * @property {Number} height 组件高度
+ * @property {Number} rotate 旋转角度
  * @property {Number} offsetX 当前组件所在的父级容器距离可视窗口的 x
  * @property {Number} offsetY 当前组件所在的父级容器距离可视窗口的 Y
  * @property {Number} scale 缩放值
@@ -22,7 +23,12 @@
  * @property {Number} adsorptionDistance 距离吸附位置多少距离会被吸附
  */
 
-import { calcWidgetPosition, calcPosAtScale } from '@/utils/widgets'
+import {
+  calcWidgetPosition,
+  calcPosAtScale,
+  calcWidgetRotate
+} from '@/utils/widgets'
+
 export default {
   props: {
     top: Number,
@@ -32,6 +38,7 @@ export default {
     scale: Number,
     parentWidth: Number,
     parentHeight: Number,
+    useContextmenu: Boolean,
     offsetX: {
       type: Number,
       default: 220
@@ -46,7 +53,7 @@ export default {
     },
     stretchPointThick: {
       type: Number,
-      default: 10
+      default: 6
     },
     stretchPointBackground: {
       type: String,
@@ -92,10 +99,14 @@ export default {
       usedTop: this.top,
       usedWidth: this.width,
       usedHeight: this.height,
+      usedRotate: this.rotate,
 
       // 存储事件信息
       mousedown: null,
-      pointMousedown: null
+      pointMousedown: null,
+
+      // 激活，按下鼠标激活。失去焦点失活
+      actived: false
     }
   },
 
@@ -111,7 +122,8 @@ export default {
     maskStyles() {
       return {
         border: this.maskBorder,
-        background: this.maskBackground
+        background: this.maskBackground,
+        'pointer-events': this.actived ? 'unset' : 'none'
       }
     },
     stretchPointStyles() {
@@ -141,6 +153,11 @@ export default {
         color: this.guardIndicatorColor,
         'font-size': this.guardIndicatorFontSize + 'px'
       }
+    },
+    slotWrapStyles() {
+      return {
+        transform: `rotate(${this.usedRotate}deg)`
+      }
     }
   },
 
@@ -156,6 +173,9 @@ export default {
     },
     height(v) {
       this.usedHeight = v
+    },
+    rotate(v) {
+      this.usedRotate = v
     }
   },
 
@@ -220,8 +240,8 @@ export default {
       }
     },
     handlePointMousedown(sd, e) {
-      e.stopPropagation()
-      e.preventDefault()
+      // e.stopPropagation()
+      // e.preventDefault()
       const { offsetWidth, offsetHeight, offsetLeft, offsetTop } = this.$el
       this.pointMousedown = {
         e,
@@ -248,9 +268,12 @@ export default {
       ]
       return points.map((point) => (
         <i
-          class={['stretch-point', point]}
+          class={['stretch-point', point, this.actived ? 'actived' : null]}
           style={this.stretchPointStyles}
-          onMousedown={this.handlePointMousedown.bind(this, point)}
+          vOn:mousedown_stop_prevent={this.handlePointMousedown.bind(
+            this,
+            point
+          )}
         />
       ))
     },
@@ -285,11 +308,50 @@ export default {
       this.usedTop = top
     },
     handleMousedown(e) {
-      e.preventDefault()
+      this.actived = true
+      // preventScroll 防止聚焦时页面滚动
+      this.$refs.input.focus({ preventScroll: true })
+      this.$emit('mousedown')
+
       const { offsetWidth, offsetHeight } = this.$el
       this.mousedown = { e, width: offsetWidth, height: offsetHeight }
       window.addEventListener('mousemove', this.moveListener)
       window.addEventListener('mouseup', this.upListener)
+    },
+
+    handleBlur() {
+      this.actived = false
+    },
+
+    // 旋转
+    handleRotateMousedown(e) {
+      // e.preventDefault()
+      // e.stopPropagation()
+      // 操作旋转的点
+      // const operaRotatePointX = e.pageX
+      // const operaRotatePointY = e.pageY
+      // 旋转中心的点
+      const centerPoint = {
+        x: this.usedLeft + this.usedWidth / 2,
+        y: this.usedHeight + this.usedHeight / 2
+      }
+
+      this.rotateMousedown = { e }
+      document.onmousemove = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        // 当前鼠标所在的点
+        const cursorPoint = {
+          x: calcPosAtScale(e.pageX - this.offsetX, this.scale, 1),
+          y: calcPosAtScale(e.pageY - this.offsetY, this.scale, 1)
+        }
+
+        this.usedRotate = calcWidgetRotate({ cursorPoint, centerPoint })
+      }
+      document.onmouseup = () => {
+        document.onmousemove = null
+        document.onmouseup = null
+      }
     }
   },
 
@@ -298,24 +360,42 @@ export default {
       <div
         class="draggable-wrap"
         style={this.styles}
-        onMousedown={this.handleMousedown}
+        vOn:mousedown_prevent={this.handleMousedown}
       >
+        {/* 用来模拟聚焦失焦 */}
+        <input ref="input" onBlur={this.handleBlur} />
+
         {this.createStretchPoint()}
 
-        <div class="draggable-mask" style={this.maskStyles} />
+        {/* <div class="draggable-rotate" vOn:mousedown_stop_prevent={this.handleRotateMousedown}>
+          <svg-icon icon-class="rotate" size="16" />
+        </div> */}
 
-        <div class="guard guard-horizontal" style={this.guardHorizontalStyles}>
+        <div
+          class={['draggable-mask', this.actived ? 'actived' : null]}
+          style={this.maskStyles}
+        />
+
+        <div
+          class={['guard', 'guard-horizontal', this.actived ? 'actived' : null]}
+          style={this.guardHorizontalStyles}
+        >
           <span class="guard-indicator" style={this.guardIndicatorStyles}>
             {this.usedLeft}
           </span>
         </div>
-        <div class="guard guard-vertical" style={this.guardVertialStyles}>
+        <div
+          class={['guard', 'guard-vertical', this.actived ? 'actived' : null]}
+          style={this.guardVertialStyles}
+        >
           <span class="guard-indicator" style={this.guardIndicatorStyles}>
             {this.usedTop}
           </span>
         </div>
 
-        {this.$slots.default}
+        <div class="slot-wrap" style={this.slotWrapStyles}>
+          {this.$slots.default}
+        </div>
       </div>
     )
   }
@@ -329,6 +409,16 @@ export default {
   cursor: move;
   min-width: 5px;
   min-height: 5px;
+
+  > input {
+    width: 100%;
+    height: 0;
+    opacity: 0;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 0;
+  }
 
   .guard {
     position: absolute;
@@ -354,6 +444,14 @@ export default {
     }
   }
 
+  .draggable-rotate {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: pointer;
+  }
+
   .draggable-mask {
     display: none;
     position: absolute;
@@ -362,12 +460,18 @@ export default {
     width: 100%;
     height: 100%;
     box-sizing: border-box;
-    pointer-events: none;
+    z-index: 2023;
+  }
+
+  .slot-wrap {
+    width: 100%;
+    height: 100%;
   }
 
   .stretch-point {
     display: none;
     position: absolute;
+    z-index: 2024;
   }
   .left-top-stretch-point {
     top: 0;
@@ -418,13 +522,8 @@ export default {
     transform: translate(50%, 50%);
   }
 }
-.draggable-wrap:hover {
-  .draggable-mask,
-  .stretch-point {
-    display: unset;
-  }
-  .guard {
-    display: unset;
-  }
+
+.actived {
+  display: unset !important;
 }
 </style>
