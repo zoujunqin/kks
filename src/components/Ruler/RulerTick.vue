@@ -1,5 +1,5 @@
 <script>
-import { drawVerticalRuler, drawHorizontalRuler } from './utils'
+import { drawVerticalRuler, drawHorizontalRuler, setBodyCursor } from './utils'
 import { state, mutations } from './observer'
 export default {
   props: {
@@ -29,9 +29,6 @@ export default {
     },
     startCombine() {
       return this.startX + this.startY
-    },
-    classes() {
-      return [this.vertical ? 'vertical-ruler-tick' : 'horizontal-ruler-tick']
     },
     styles() {
       const style = {}
@@ -81,42 +78,49 @@ export default {
       }
     },
 
-    moveListener(e) {
-      e.preventDefault()
-      e.stopPropagation()
-      if (this.vertical) {
-        this.line = {
-          canAdded: e.pageX - state.rulerOffsetX >= this.thick,
-          left: e.pageX - state.rulerOffsetX,
-          top: 0,
-          vertical: true,
-          start: this.startX
-        }
-      } else {
-        this.line = {
-          canAdded: e.pageY - state.rulerOffsetY >= this.thick,
-          top: e.pageY - state.rulerOffsetY,
-          left: 0,
-          vertical: false,
-          start: this.startY
-        }
+    createMouseEvent() {
+      document.onmousemove = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        this.vertical &&
+          (this.line = {
+            canAdded: e.pageX - state.rulerOffsetX >= this.thick,
+            left: e.pageX - state.rulerOffsetX,
+            top: 0,
+            vertical: true,
+            start: this.startX
+          })
+
+        !this.vertical &&
+          (this.line = {
+            canAdded: e.pageY - state.rulerOffsetY >= this.thick,
+            top: e.pageY - state.rulerOffsetY,
+            left: 0,
+            vertical: false,
+            start: this.startY
+          })
+
+        this.$emit('move', this.line)
       }
-      this.$emit('move', this.line)
-    },
-    upListener() {
-      window.removeEventListener('mousemove', this.moveListener)
-      window.removeEventListener('mouseup', this.upListener)
-      if (this.line) {
-        this.$emit('up', this.line)
+
+      document.onmouseup = () => {
+        document.onmouseup = null
+        document.onmousemove = null
+
+        this.line && this.$emit('up', this.line)
         this.line = null
+        setBodyCursor('auto')
       }
     },
     handleMousedown(e) {
-      window.addEventListener('mousemove', this.moveListener)
-      window.addEventListener('mouseup', this.upListener)
-      if (!state.rulerOffsetX || !state.rulerOffsetY) {
-        if (this.vertical) mutations.setRulerOffsetX(e.pageX - e.offsetX)
-        else mutations.setRulerOffsetY(e.pageY - e.offsetY)
+      setBodyCursor(this.vertical ? 'col-resize' : 'row-resize')
+      this.createMouseEvent()
+
+      if (!state.rulerOffsetX && this.vertical) {
+        mutations.setRulerOffsetX(e.pageX - e.offsetX)
+      } else if (!state.rulerOffsetY && !this.vertical) {
+        mutations.setRulerOffsetY(e.pageY - e.offsetY)
       }
       this.$emit('down')
     }
@@ -124,7 +128,7 @@ export default {
 
   mounted() {
     this.init()
-    this.draw()
+    // this.draw()
   },
 
   render() {
@@ -132,20 +136,10 @@ export default {
       <canvas
         width={this.width}
         height={this.height}
-        class={this.classes}
         style={this.styles}
-        on-mousedown={this.handleMousedown}
+        vOn:mousedown={this.handleMousedown}
       />
     )
   }
 }
 </script>
-
-<style scoped lang="scss">
-.vertical-ruler-tick:hover {
-  cursor: col-resize;
-}
-.horizontal-ruler-tick:hover {
-  cursor: row-resize;
-}
-</style>

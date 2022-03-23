@@ -144,14 +144,18 @@ export default {
       showLines: true,
       movableLine: {},
       showMovableLine: false,
-      movableLineIsVertical: false
+      movableLineIsVertical: false,
+
+      pointerEvents: 'unset'
     }
   },
 
   computed: {
+    // 水平刻度尺宽度
     tickWidth() {
       return this.width - this.thick
     },
+    // 垂直刻度尺高度
     tickHeight() {
       return this.height - this.thick
     },
@@ -215,20 +219,15 @@ export default {
       this.sy =
         scrollTop - (this.slotHeight - this.contentHeight * this.scale) / 2
 
-      const osx = scrollLeft - (this.slotWidth - this.contentWidth) / 2
-      const osy = scrollTop - (this.slotHeight - this.contentHeight) / 2
-
       this.$emit('transform', {
         sx: this.sx,
         sy: this.sy,
-        scale: this.scale,
-        osx,
-        osy
+        scale: this.scale
       })
     },
     // 放大缩小执行
     handleWheel(e) {
-      if (e.ctrlKey || e.metaKey) {
+      if (e.metaKey) {
         e.preventDefault()
 
         const ss = 0.02
@@ -290,6 +289,25 @@ export default {
 
   mounted() {
     this.$nextTick(this.setScroll)
+
+    const rawKeydown = document.onkeydown
+    document.onkeydown = (e) => {
+      // 移除参考线的事件，防止缩放事件副作用
+      if (e.key === 'Meta') this.pointerEvents = 'none'
+      rawKeydown?.call(this, document)
+    }
+
+    const rawKeyup = document.onkeyup
+    document.onkeyup = (e) => {
+      // 移除参考线的事件，防止缩放事件副作用
+      if (e.key === 'Meta') this.pointerEvents = 'unset'
+      rawKeyup?.call(this, document)
+    }
+  },
+
+  beforeDestroy() {
+    document.onkeyup = null
+    document.onkeydown = null
   },
 
   render() {
@@ -298,7 +316,7 @@ export default {
         <div
           class="corner"
           style={this.cornerStyles}
-          on-click={this.handleCornerClick}
+          vOn:click={this.handleCornerClick}
         >
           <SvgIcon
             iconClass={this.cornerIcon}
@@ -319,9 +337,9 @@ export default {
           tickLineColor={this.tickLineColor}
           tickLine={this.tickLine}
           tickColor={this.tickColor}
-          on-down={this.handleDown}
-          on-move={this.handleMove}
-          on-up={this.handleUp}
+          vOn:down={this.handleDown}
+          vOn:move={this.handleMove}
+          vOn:up={this.handleUp}
         />
         <RulerTick
           class="vertical-ruler-tick"
@@ -336,9 +354,9 @@ export default {
           tickLineColor={this.tickLineColor}
           tickLine={this.tickLine}
           tickColor={this.tickColor}
-          on-down={this.handleDown}
-          on-move={this.handleMove}
-          on-up={this.handleUp}
+          vOn:down={this.handleDown}
+          vOn:move={this.handleMove}
+          vOn:up={this.handleUp}
         />
 
         {this.lines.map((line, index) => (
@@ -353,13 +371,14 @@ export default {
             startX={this.sx}
             startY={this.sy}
             thick={this.thick}
+            pointerEvents={this.pointerEvents}
             indicatorBackground={this.indicatorBackground}
             indicatorColor={this.indicatorColor}
             lineColor={this.lineColor}
             lineThick={this.lineThick}
-            on-down={this.handleLineDown}
-            on-move={this.handleMove}
-            on-up={this.handleLineUp}
+            vOn:down={this.handleLineDown}
+            vOn:move={this.handleMove}
+            vOn:up={this.handleLineUp}
           />
         ))}
         <RulerLine
@@ -381,8 +400,8 @@ export default {
         <div
           ref="rc"
           class="ruler-content"
-          on-wheel={this.handleWheel}
-          on-scroll={this.handleScroll}
+          vOn:wheel={this.handleWheel}
+          vOn:scroll={this.handleScroll}
         >
           <div class="slot-wrap" style={this.slotWrapStyles}>
             {this.$slots.default}

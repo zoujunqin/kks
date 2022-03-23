@@ -1,6 +1,7 @@
 <script>
 import { state } from './observer'
 import { noop } from '@/utils'
+import { setBodyCursor } from './utils'
 export default {
   props: {
     id: Number,
@@ -19,7 +20,8 @@ export default {
     movableLineColor: String,
     movableLineThick: Number,
     mlIndicatorBackground: String,
-    mlIndicatorColor: String
+    mlIndicatorColor: String,
+    pointerEvents: String
   },
 
   data() {
@@ -33,12 +35,14 @@ export default {
       return this.vertical ? this.startX : this.startY
     },
 
+    // 参考线样式
     lineStyle() {
       const startValue = this.start / this.scale
       const distance = (this.value - startValue) * this.scale + this.thick
 
       const style = {
-        background: this.lineColor
+        background: this.lineColor,
+        'pointer-events': this.pointerEvents
       }
       if (this.vertical) {
         style.left = `${distance}px`
@@ -51,16 +55,15 @@ export default {
       }
       return style
     },
+    // 移动参考线样式
     movableLineStyle() {
-      const { left, top } = this.line
       const style = {
-        left: `${left}px`,
-        top: `${top}px`,
+        left: `${this.line.left}px`,
+        top: `${this.line.top}px`,
         background: this.movableLineColor
       }
-      if (this.vertical) {
-        style.width = `${this.movableLineThick}px`
-      } else style.height = `${this.movableLineThick}px`
+
+      style[this.vertical ? 'width' : 'height'] = `${this.movableLineThick}px`
 
       return style
     },
@@ -79,6 +82,8 @@ export default {
       if (this.movable) {
         style.color = this.mlIndicatorColor
         style.background = this.mlIndicatorBackground
+        style.opacity =
+          this.line[this.vertical ? 'left' : 'top'] < this.thick ? 0 : 1
       } else {
         style.color = this.indicatorColor
         style.background = this.indicatorBackground
@@ -97,29 +102,34 @@ export default {
   },
 
   methods: {
-    moveListener(e) {
-      e.preventDefault()
-      e.stopPropagation()
+    createMouseEvent() {
+      document.onmousemove = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
 
-      let line = this.line
-      if (this.vertical) {
-        line.left = e.pageX - state.rulerOffsetX
-        line.canRemoved = line.left < this.thick
-      } else {
-        line.top = e.pageY - state.rulerOffsetY
-        line.canRemoved = line.top < this.thick
+        let line = this.line
+        if (this.vertical) {
+          line.left = e.pageX - state.rulerOffsetX
+          line.canRemoved = line.left < this.thick
+        } else {
+          line.top = e.pageY - state.rulerOffsetY
+          line.canRemoved = line.top < this.thick
+        }
+
+        this.$emit('move', (this.handledLine = line))
       }
 
-      this.$emit('move', (this.handledLine = line))
-    },
-    upListener() {
-      window.removeEventListener('mousemove', this.moveListener)
-      window.removeEventListener('mouseup', this.upListener)
-      if (this.handledLine) this.$emit('up', this.handledLine, this.id)
+      document.onmouseup = () => {
+        document.onmouseup = null
+        document.onmousemove = null
+        this.handledLine && this.$emit('up', this.handledLine, this.id)
+        setBodyCursor('auto')
+      }
     },
     handleMousedown(e) {
-      window.addEventListener('mousemove', this.moveListener)
-      window.addEventListener('mouseup', this.upListener)
+      setBodyCursor(this.vertical ? 'col-resize' : 'row-resize')
+      this.createMouseEvent()
+
       let line = this.line
       if (this.vertical) {
         line.start = this.startX
@@ -158,19 +168,28 @@ export default {
     padding: 2px;
     border-radius: 2px;
     font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.5s ease;
   }
 }
 .vertical-ruler-line {
   height: 100%;
 }
-.vertical-ruler-line:hover {
-  cursor: col-resize;
-}
 .horizontal-ruler-line {
   width: 100%;
 }
+.vertical-ruler-line:hover {
+  cursor: col-resize;
+  .indicator {
+    opacity: 1;
+  }
+}
 .horizontal-ruler-line:hover {
   cursor: row-resize;
+  .indicator {
+    opacity: 1;
+  }
 }
 .movable-line {
   top: -1px;

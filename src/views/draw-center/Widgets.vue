@@ -12,9 +12,7 @@ export default {
   },
 
   data() {
-    return {
-      canvasContentEl: null
-    }
+    return {}
   },
 
   methods: {
