@@ -85,8 +85,8 @@ export default {
 
         this.vertical &&
           (this.line = {
-            canAdded: e.pageX - state.rulerOffsetX >= this.thick,
-            left: e.pageX - state.rulerOffsetX,
+            canAdded: e.clientX - state.rulerOffsetX >= this.thick,
+            left: e.clientX - state.rulerOffsetX,
             top: 0,
             vertical: true,
             start: this.startX
@@ -94,8 +94,8 @@ export default {
 
         !this.vertical &&
           (this.line = {
-            canAdded: e.pageY - state.rulerOffsetY >= this.thick,
-            top: e.pageY - state.rulerOffsetY,
+            canAdded: e.clientY - state.rulerOffsetY >= this.thick,
+            top: e.clientY - state.rulerOffsetY,
             left: 0,
             vertical: false,
             start: this.startY
@@ -118,9 +118,9 @@ export default {
       this.createMouseEvent()
 
       if (!state.rulerOffsetX && this.vertical) {
-        mutations.setRulerOffsetX(e.pageX - e.offsetX)
+        mutations.setRulerOffsetX(e.clientX - e.offsetX)
       } else if (!state.rulerOffsetY && !this.vertical) {
-        mutations.setRulerOffsetY(e.pageY - e.offsetY)
+        mutations.setRulerOffsetY(e.clientY - e.offsetY)
       }
       this.$emit('down')
     }

@@ -54,3 +54,16 @@ export const backgroundColor = {
   required: false,
   configurable: true
 }
+
+// 背景图片
+export const backgroundImage = {
+  type: 'SetupImage',
+  label: '背景图片',
+  mapping: 'style.backgroundColor',
+  props: {
+    value: '#fff'
+  },
+  unit: '',
+  required: false,
+  configurable: true
+}

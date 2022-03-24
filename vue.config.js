@@ -24,6 +24,7 @@ const configureWebpackConfig = {
 }
 
 module.exports = {
+  runtimeCompiler: true,
   ...createDevServer(AGENT_PATHS),
 
   configureWebpack: isAnalyze

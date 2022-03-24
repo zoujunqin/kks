@@ -202,6 +202,10 @@ export default {
         (this.slotHeight - this.contentHeight) / 2 + this.startY
       rulerContent.scrollLeft =
         (this.slotWidth - this.contentWidth) / 2 + this.startX
+
+      // if this.slotWidth equals this.contentWidth and this.slotHeight equals this.contentHeight, call handlerScroll manually
+      if (rulerContent.scrollTop === 0 && rulerContent.scrollLeft === 0)
+        this.handleScroll()
     },
 
     handleCornerClick() {

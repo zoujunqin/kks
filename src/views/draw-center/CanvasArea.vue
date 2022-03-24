@@ -169,6 +169,7 @@ export default {
     return (
       <div class="canvas-area" vOn:contextmenu_prevent={noop}>
         <Ruler
+          startX={-29}
           thick={this.rulerThick}
           width={this.rootWidth}
           height={this.rootHeight}

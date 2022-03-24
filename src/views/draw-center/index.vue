@@ -14,11 +14,28 @@ export default {
     return {
       option,
       innerHTML: null,
-      seizeSeatStyles: {}
+      seizeSeatStyles: {},
+
+      inputValue: '<div></div>',
+      inputValue2: ''
     }
   },
 
-  computed: {},
+  computed: {
+    tc() {
+      return {
+        template: this.inputValue,
+        props: {
+          test: String
+        },
+        data() {
+          return {
+            d: 1
+          }
+        }
+      }
+    }
+  },
   watch: {
     option: {
       handler() {
@@ -60,7 +77,6 @@ export default {
   },
 
   mounted() {
-    console.log(this)
     window.addEventListener('resize', this.resize)
   },
 
@@ -68,9 +84,13 @@ export default {
     window.addEventListener('resize', this.resize)
   },
 
-  render() {
+  render(h) {
     return (
       <div class="draw-center">
+        <el-input vModel={this.inputValue}></el-input>
+        <el-input vModel={this.inputValue2}></el-input>
+        {h(this.tc, { props: { test: this.inputValue2 } })}
+
         <div class="top">
           <Widgets
             ref="Widgets"

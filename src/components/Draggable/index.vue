@@ -194,11 +194,11 @@ export default {
         left: oleft,
         top: otop
       } = this.pointMousedown
-      const { pageX, pageY } = e
+      const { clientX, clientY } = e
 
       // 以下计算都是基于物理像素
-      const left = calcPosAtScale(pageX - this.offsetX, this.scale)
-      const top = calcPosAtScale(pageY - this.offsetY, this.scale)
+      const left = calcPosAtScale(clientX - this.offsetX, this.scale)
+      const top = calcPosAtScale(clientY - this.offsetY, this.scale)
       const diffWidth = left - oleft
       const diffHeight = top - otop
 
@@ -240,8 +240,6 @@ export default {
       }
     },
     handlePointMousedown(sd, e) {
-      // e.stopPropagation()
-      // e.preventDefault()
       const { offsetWidth, offsetHeight, offsetLeft, offsetTop } = this.$el
       this.pointMousedown = {
         e,
@@ -328,8 +326,8 @@ export default {
       // e.preventDefault()
       // e.stopPropagation()
       // 操作旋转的点
-      // const operaRotatePointX = e.pageX
-      // const operaRotatePointY = e.pageY
+      // const operaRotatePointX = e.clientX
+      // const operaRotatePointY = e.clientY
       // 旋转中心的点
       const centerPoint = {
         x: this.usedLeft + this.usedWidth / 2,
@@ -342,8 +340,8 @@ export default {
         e.stopPropagation()
         // 当前鼠标所在的点
         const cursorPoint = {
-          x: calcPosAtScale(e.pageX - this.offsetX, this.scale, 1),
-          y: calcPosAtScale(e.pageY - this.offsetY, this.scale, 1)
+          x: calcPosAtScale(e.clientX - this.offsetX, this.scale, 1),
+          y: calcPosAtScale(e.clientY - this.offsetY, this.scale, 1)
         }
 
         this.usedRotate = calcWidgetRotate({ cursorPoint, centerPoint })

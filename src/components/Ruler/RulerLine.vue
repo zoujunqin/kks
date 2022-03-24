@@ -109,10 +109,10 @@ export default {
 
         let line = this.line
         if (this.vertical) {
-          line.left = e.pageX - state.rulerOffsetX
+          line.left = e.clientX - state.rulerOffsetX
           line.canRemoved = line.left < this.thick
         } else {
-          line.top = e.pageY - state.rulerOffsetY
+          line.top = e.clientY - state.rulerOffsetY
           line.canRemoved = line.top < this.thick
         }
 
@@ -133,10 +133,10 @@ export default {
       let line = this.line
       if (this.vertical) {
         line.start = this.startX
-        line.left = e.pageX - state.rulerOffsetX
+        line.left = e.clientX - state.rulerOffsetX
       } else {
         line.start = this.startY
-        line.top = e.pageY - state.rulerOffsetY
+        line.top = e.clientY - state.rulerOffsetY
       }
       this.$emit('down', (this.handledLine = line))
     }

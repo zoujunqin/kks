@@ -63,11 +63,11 @@ export default {
 <style lang="scss" scoped>
 .widgets-wrap {
   display: flex;
-  justify-content: space-between;
 }
 .test-widget {
   width: 50px;
   height: 50px;
+  margin-right: 10px;
   background-color: green;
 }
 </style>
