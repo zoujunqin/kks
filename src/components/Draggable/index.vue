@@ -134,26 +134,7 @@ export default {
         'border-radius': this.stretchPointThick / 2 + 'px'
       }
     },
-    guardHorizontalStyles() {
-      return {
-        width: this.usedLeft + 'px',
-        left: -Math.abs(this.usedLeft) + 'px',
-        'border-top': `1px dotted ${this.guardLineBackground}`
-      }
-    },
-    guardVertialStyles() {
-      return {
-        height: this.usedTop + 'px',
-        top: -Math.abs(this.usedTop) + 'px',
-        'border-left': `1px dotted ${this.guardLineBackground}`
-      }
-    },
-    guardIndicatorStyles() {
-      return {
-        color: this.guardIndicatorColor,
-        'font-size': this.guardIndicatorFontSize + 'px'
-      }
-    },
+
     slotWrapStyles() {
       return {
         transform: `rotate(${this.usedRotate}deg)`
@@ -363,35 +344,23 @@ export default {
         {/* 用来模拟聚焦失焦 */}
         <input ref="input" onBlur={this.handleBlur} />
 
-        {this.createStretchPoint()}
-
         {/* <div class="draggable-rotate" vOn:mousedown_stop_prevent={this.handleRotateMousedown}>
           <svg-icon icon-class="rotate" size="16" />
         </div> */}
 
-        <div
-          class={['draggable-mask', this.actived ? 'actived' : null]}
-          style={this.maskStyles}
-        />
-
-        <div
-          class={['guard', 'guard-horizontal', this.actived ? 'actived' : null]}
-          style={this.guardHorizontalStyles}
-        >
-          <span class="guard-indicator" style={this.guardIndicatorStyles}>
-            {this.usedLeft}
-          </span>
-        </div>
-        <div
-          class={['guard', 'guard-vertical', this.actived ? 'actived' : null]}
-          style={this.guardVertialStyles}
-        >
-          <span class="guard-indicator" style={this.guardIndicatorStyles}>
-            {this.usedTop}
-          </span>
+        <div class={{ tip: true, actived: this.actived }}>
+          <div>x: {this.usedLeft}</div>
+          <div>y: {this.usedTop}</div>
+          <div>r: {this.usedRotate}</div>
         </div>
 
         <div class="slot-wrap" style={this.slotWrapStyles}>
+          {this.createStretchPoint()}
+          <div
+            class={['draggable-mask', this.actived ? 'actived' : null]}
+            style={this.maskStyles}
+          />
+
           {this.$slots.default}
         </div>
       </div>
@@ -418,28 +387,17 @@ export default {
     z-index: 0;
   }
 
-  .guard {
-    position: absolute;
+  .tip {
+    padding: 6px;
     display: none;
+    position: absolute;
+    right: -4px;
+    bottom: 0;
+    transform: translateX(100%);
     pointer-events: none;
-  }
-  .guard-horizontal {
-    top: 0;
-    .guard-indicator {
-      position: absolute;
-      top: 0;
-      right: 50px;
-      transform: translateY(-100%);
-    }
-  }
-  .guard-vertical {
-    left: 0;
-    .guard-indicator {
-      position: absolute;
-      left: 0;
-      bottom: 50px;
-      transform: translateX(-100%);
-    }
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 0 1px 0 gray;
   }
 
   .draggable-rotate {
