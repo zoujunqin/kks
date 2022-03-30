@@ -1,10 +1,6 @@
 <script>
 /**
- * @property {Number} top 定位 top
- * @property {Number} left 定位 left
- * @property {Number} width 组件宽度
- * @property {Number} height 组件高度
- * @property {Number} rotate 旋转角度
+ * @property {Number} styles
  * @property {Number} offsetX 当前组件所在的父级容器距离可视窗口的 x
  * @property {Number} offsetY 当前组件所在的父级容器距离可视窗口的 Y
  * @property {Number} scale 缩放值
@@ -23,140 +19,106 @@
  * @property {Number} adsorptionDistance 距离吸附位置多少距离会被吸附
  */
 
-import {
-  calcWidgetPosition,
-  calcPosAtScale,
-  calcWidgetRotate
-} from '@/utils/widgets'
-
-export default {
-  props: {
-    top: Number,
-    left: Number,
-    width: Number,
-    height: Number,
-    scale: Number,
-    parentWidth: Number,
-    parentHeight: Number,
-    useContextmenu: Boolean,
-    offsetX: {
-      type: Number,
-      default: 220
-    },
-    offsetY: {
-      type: Number,
-      default: 80
-    },
-    gap: {
-      type: Number,
-      default: 5
-    },
-    stretchPointThick: {
-      type: Number,
-      default: 6
-    },
-    stretchPointBackground: {
-      type: String,
-      default: '#09f'
-    },
-    maskBorder: {
-      type: String,
-      default: '1px dashed #09f'
-    },
-    maskBackground: {
-      type: String,
-      default: 'transparent'
-    },
-    guardLineBackground: {
-      type: String,
-      default: '#09f'
-    },
-    guardIndicatorColor: {
-      type: String,
-      default: '#09f'
-    },
-    guardIndicatorFontSize: {
-      type: Number,
-      default: 12
-    },
-    adsorpLefts: {
-      type: Array,
-      default: () => []
-    },
-    adsorpTops: {
-      type: Array,
-      default: () => []
-    },
-    adsorptionDistance: {
-      type: Number,
-      default: 5
-    }
+const props = {
+  styles: {
+    type: Object,
+    default: () => {}
   },
+  scale: Number,
+  parentWidth: Number,
+  parentHeight: Number,
+  active: {
+    type: Boolean,
+    default: true
+  },
+  rotate: {
+    type: Number,
+    default: 0
+  },
+  offsetX: {
+    type: Number,
+    default: 220
+  },
+  offsetY: {
+    type: Number,
+    default: 80
+  },
+  gap: {
+    type: Number,
+    default: 5
+  },
+  stretchPointThick: {
+    type: Number,
+    default: 6
+  },
+  stretchPointBackground: {
+    type: String,
+    default: '#09f'
+  },
+  maskBorder: {
+    type: String,
+    default: '1px dashed #09f'
+  },
+  maskBackground: {
+    type: String,
+    default: 'transparent'
+  },
+  guardLineBackground: {
+    type: String,
+    default: '#09f'
+  },
+  guardIndicatorColor: {
+    type: String,
+    default: '#09f'
+  },
+  guardIndicatorFontSize: {
+    type: Number,
+    default: 12
+  },
+  adsorpLefts: {
+    type: Array,
+    default: () => []
+  },
+  adsorpTops: {
+    type: Array,
+    default: () => []
+  },
+  adsorptionDistance: {
+    type: Number,
+    default: 5
+  }
+}
 
+import { calcWidgetPosition, calcPosAtScale } from '@/utils/widgets'
+
+// 八个点
+const points = ['lt', 't', 'rt', 'r', 'rb', 'b', 'lb', 'l']
+
+function genMaskStyle() {
+  return {
+    border: this.maskBorder,
+    background: this.maskBackgrounds
+  }
+}
+
+function genPointStyle(point) {
+  console.log(point)
+  return {
+    width: this.stretchPointThick + 'px',
+    height: this.stretchPointThick + 'px',
+    background: this.stretchPointBackground,
+    'border-radius': this.stretchPointThick / 2 + 'px'
+  }
+}
+export default {
+  props,
   data() {
     return {
-      usedLeft: this.left,
-      usedTop: this.top,
-      usedWidth: this.width,
-      usedHeight: this.height,
-      usedRotate: this.rotate,
-
       // 存储事件信息
       mousedown: null,
       pointMousedown: null,
 
-      // 激活，按下鼠标激活。失去焦点失活
-      actived: false
-    }
-  },
-
-  computed: {
-    styles() {
-      return {
-        left: this.usedLeft + 'px',
-        top: this.usedTop + 'px',
-        width: this.usedWidth + 'px',
-        height: this.usedHeight + 'px'
-      }
-    },
-    maskStyles() {
-      return {
-        border: this.maskBorder,
-        background: this.maskBackground,
-        'pointer-events': this.actived ? 'unset' : 'none'
-      }
-    },
-    stretchPointStyles() {
-      return {
-        width: this.stretchPointThick + 'px',
-        height: this.stretchPointThick + 'px',
-        background: this.stretchPointBackground,
-        'border-radius': this.stretchPointThick / 2 + 'px'
-      }
-    },
-
-    slotWrapStyles() {
-      return {
-        transform: `rotate(${this.usedRotate}deg)`
-      }
-    }
-  },
-
-  watch: {
-    left(v) {
-      this.usedLeft = v
-    },
-    top(v) {
-      this.usedTop = v
-    },
-    width(v) {
-      this.usedWidth = v
-    },
-    height(v) {
-      this.usedHeight = v
-    },
-    rotate(v) {
-      this.usedRotate = v
+      points
     }
   },
 
@@ -233,29 +195,6 @@ export default {
       window.addEventListener('mousemove', this.pointMoveListener)
       window.addEventListener('mouseup', this.pointUpListener)
     },
-    // 创建拉伸点
-    createStretchPoint() {
-      const points = [
-        'left-top-stretch-point',
-        'top-stretch-point',
-        'right-top-stretch-point',
-        'left-stretch-point',
-        'right-stretch-point',
-        'left-bottom-stretch-point',
-        'bottom-stretch-point',
-        'right-bottom-stretch-point'
-      ]
-      return points.map((point) => (
-        <i
-          class={['stretch-point', point, this.actived ? 'actived' : null]}
-          style={this.stretchPointStyles}
-          vOn:mousedown_stop_prevent={this.handlePointMousedown.bind(
-            this,
-            point
-          )}
-        />
-      ))
-    },
 
     upListener() {
       this.mousedown = null
@@ -287,9 +226,6 @@ export default {
       this.usedTop = top
     },
     handleMousedown(e) {
-      this.actived = true
-      // preventScroll 防止聚焦时页面滚动
-      this.$refs.input.focus({ preventScroll: true })
       this.$emit('mousedown')
 
       const { offsetWidth, offsetHeight } = this.$el
@@ -298,39 +234,42 @@ export default {
       window.addEventListener('mouseup', this.upListener)
     },
 
-    handleBlur() {
-      this.actived = false
-    },
-
     // 旋转
-    handleRotateMousedown(e) {
-      // e.preventDefault()
-      // e.stopPropagation()
-      // 操作旋转的点
-      // const operaRotatePointX = e.clientX
-      // const operaRotatePointY = e.clientY
-      // 旋转中心的点
-      const centerPoint = {
-        x: this.usedLeft + this.usedWidth / 2,
-        y: this.usedHeight + this.usedHeight / 2
+    handleRotate(e) {
+      e.preventDefault()
+      e.stopPropagation()
+      // 初始坐标和初始角度
+      const startY = e.clientY
+      const startX = e.clientX
+      const startRotate = this.usedRotate
+
+      // 获取元素中心点位置
+      const rect = this.$el.getBoundingClientRect()
+      const centerX = rect.left + rect.width / 2
+      const centerY = rect.top + rect.height / 2
+
+      // 旋转前的角度
+      const rotateDegreeBefore =
+        Math.atan2(startY - centerY, startX - centerX) / (Math.PI / 180)
+
+      const move = (moveEvent) => {
+        const curX = moveEvent.clientX
+        const curY = moveEvent.clientY
+        // 旋转后的角度
+        const rotateDegreeAfter =
+          Math.atan2(curY - centerY, curX - centerX) / (Math.PI / 180)
+        // 获取旋转的角度值
+        this.usedRotate =
+          startRotate + Math.ceil(rotateDegreeAfter - rotateDegreeBefore)
       }
 
-      this.rotateMousedown = { e }
-      document.onmousemove = (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        // 当前鼠标所在的点
-        const cursorPoint = {
-          x: calcPosAtScale(e.clientX - this.offsetX, this.scale, 1),
-          y: calcPosAtScale(e.clientY - this.offsetY, this.scale, 1)
-        }
+      const up = () => {
+        document.removeEventListener('mousemove', move)
+        document.removeEventListener('mouseup', up)
+      }
 
-        this.usedRotate = calcWidgetRotate({ cursorPoint, centerPoint })
-      }
-      document.onmouseup = () => {
-        document.onmousemove = null
-        document.onmouseup = null
-      }
+      document.addEventListener('mousemove', move)
+      document.addEventListener('mouseup', up)
     }
   },
 
@@ -341,28 +280,37 @@ export default {
         style={this.styles}
         vOn:mousedown_prevent={this.handleMousedown}
       >
-        {/* 用来模拟聚焦失焦 */}
-        <input ref="input" onBlur={this.handleBlur} />
-
-        {/* <div class="draggable-rotate" vOn:mousedown_stop_prevent={this.handleRotateMousedown}>
+        <div
+          class="draggable-rotate"
+          vOn:mousedown_stop_prevent={this.handleRotate}
+        >
           <svg-icon icon-class="rotate" size="16" />
-        </div> */}
-
-        <div class={{ tip: true, actived: this.actived }}>
-          <div>x: {this.usedLeft}</div>
-          <div>y: {this.usedTop}</div>
-          <div>r: {this.usedRotate}</div>
         </div>
 
-        <div class="slot-wrap" style={this.slotWrapStyles}>
-          {this.createStretchPoint()}
-          <div
-            class={['draggable-mask', this.actived ? 'actived' : null]}
-            style={this.maskStyles}
+        {points.map((point) => (
+          <i
+            class="stretch-point"
+            style={genPointStyle.call(this, point)}
+            vOn:mousedown_stop_prevent={this.handlePointMousedown.bind(
+              this,
+              point
+            )}
           />
+        ))}
 
-          {this.$slots.default}
-        </div>
+        {this.active && (
+          <div class="tip">
+            <div>x: {this.usedLeft}</div>
+            <div>y: {this.usedTop}</div>
+            <div>r: {this.usedRotate}</div>
+          </div>
+        )}
+
+        {this.active && (
+          <div class="draggable-mask" style={genMaskStyle.call(this)} />
+        )}
+
+        {this.$slots.default}
       </div>
     )
   }
@@ -377,19 +325,8 @@ export default {
   min-width: 5px;
   min-height: 5px;
 
-  > input {
-    width: 100%;
-    height: 0;
-    opacity: 0;
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 0;
-  }
-
   .tip {
     padding: 6px;
-    display: none;
     position: absolute;
     right: -4px;
     bottom: 0;
@@ -409,7 +346,6 @@ export default {
   }
 
   .draggable-mask {
-    display: none;
     position: absolute;
     left: 0;
     top: 0;
@@ -419,67 +355,9 @@ export default {
     z-index: 2023;
   }
 
-  .slot-wrap {
-    width: 100%;
-    height: 100%;
-  }
-
   .stretch-point {
-    display: none;
     position: absolute;
     z-index: 2024;
   }
-  .left-top-stretch-point {
-    top: 0;
-    left: 0;
-    cursor: nwse-resize;
-    transform: translate(-50%, -50%);
-  }
-  .top-stretch-point {
-    top: 0;
-    left: 50%;
-    cursor: ns-resize;
-    transform: translate(-50%, -50%);
-  }
-  .right-top-stretch-point {
-    top: 0;
-    right: 0;
-    cursor: nesw-resize;
-    transform: translate(50%, -50%);
-  }
-  .left-stretch-point {
-    left: 0;
-    top: 50%;
-    cursor: ew-resize;
-    transform: translate(-50%, -50%);
-  }
-  .right-stretch-point {
-    right: 0;
-    top: 50%;
-    cursor: ew-resize;
-    transform: translate(50%, -50%);
-  }
-  .left-bottom-stretch-point {
-    bottom: 0;
-    left: 0;
-    cursor: nesw-resize;
-    transform: translate(-50%, 50%);
-  }
-  .bottom-stretch-point {
-    bottom: 0;
-    left: 50%;
-    cursor: ns-resize;
-    transform: translate(-50%, 50%);
-  }
-  .right-bottom-stretch-point {
-    bottom: 0;
-    right: 0;
-    cursor: nwse-resize;
-    transform: translate(50%, 50%);
-  }
-}
-
-.actived {
-  display: unset !important;
 }
 </style>

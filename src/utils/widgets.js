@@ -85,33 +85,3 @@ export function calcWidgetPosition({
 export function calcPosAtScale(pos, scale, fixed = 1) {
   return +(pos / scale).toFixed(fixed)
 }
-
-export function calcWidgetRotate({ centerPoint, cursorPoint }) {
-  const { x: centerPointX, y: centerPointY } = centerPoint
-  const { x: cursorPointX, y: cursorPointY } = cursorPoint
-
-  const distance = cursorPointX - centerPointX
-  const tc = Math.sqrt(
-    Math.pow(centerPointX - cursorPointX, 2) +
-      Math.pow(centerPointY - cursorPointY, 2)
-  )
-  let angle = (Math.asin(distance / tc) * 180) / Math.PI
-  console.log(angle)
-
-  if (cursorPointX >= centerPointX && cursorPointY <= centerPointY) {
-    // console.log(1)
-    return angle
-  }
-  if (cursorPointX >= centerPointX && cursorPointY >= centerPointY) {
-    // console.log(2)
-    return angle + Math.PI / 2
-  }
-  if (cursorPointX <= centerPointX && cursorPointY >= centerPointY) {
-    // console.log(3)
-    return angle + Math.PI
-  }
-  if (cursorPointX <= centerPointX && cursorPointY <= centerPointY) {
-    // console.log(4)
-    return angle + (Math.PI * 3) / 2
-  }
-}
