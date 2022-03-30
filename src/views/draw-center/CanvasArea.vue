@@ -16,8 +16,8 @@ export default {
       rootHeight: 0,
 
       scale: 1,
-      offsetX: 0, // content 距离视口 x
-      offsetY: 0, // content 距离视口 y
+      cx: 0, // content 距离父容器的 x
+      cy: 0, // content 距离父容器的 y
       contentWidth: 1600,
       contentHeight: 800,
 
@@ -82,8 +82,8 @@ export default {
 
     // 标尺滚动和缩放触发
     handleTransform({ sx, sy, scale }) {
-      this.offsetX = -sx + 220
-      this.offsetY = -sy + 80
+      this.cx = sx
+      this.cy = sy
       this.scale = scale
     },
     handleRulerLineUpdate(lines) {
@@ -99,6 +99,7 @@ export default {
       mutations.setInCanvasArea(true)
       const rawMousemove = document.onmousemove
       document.onmousemove = (e) => {
+        console.log(e)
         rawMousemove && rawMousemove.call(document, e)
         if (!state.isInCanvasArea) return
         const { left, top } = calcWidgetPosition({
@@ -108,8 +109,8 @@ export default {
           parentWidth: this.contentWidth,
           parentHeight: this.contentHeight,
           gap: this.draggableGap,
-          parentOffsetX: this.offsetX,
-          parentOffsetY: this.offsetY,
+          parentOffsetX: this.cx + 220,
+          parentOffsetY: this.cy + 80,
           addis: this.adsorptionDistance,
           adsorpLefts: this.adsorpLefts,
           adsorpTops: this.adsorpTops,
@@ -132,8 +133,12 @@ export default {
     handleContentMouseup() {
       this.seizeSeatStyles.opacity = 0
       this.widgets.push({
-        left: parseFloat(this.seizeSeatStyles.left),
-        top: parseFloat(this.seizeSeatStyles.top),
+        style: {
+          left: parseFloat(this.seizeSeatStyles.left),
+          top: parseFloat(this.seizeSeatStyles.top),
+          width: 200,
+          height: 200
+        },
         ...state.widgetOption
       })
     },
@@ -149,6 +154,12 @@ export default {
     },
     draggableMousedown(widget) {
       mutations.setActivatedWidget(widget)
+    },
+    handleDraggableMove(index, style) {
+      this.widgets[index].style = { ...this.widgets[index].style, ...style }
+    },
+    handleDraggableRotate(index, rotate) {
+      this.widgets[index].style = { ...this.widgets[index].style, rotate }
     },
 
     resize() {
@@ -169,7 +180,7 @@ export default {
     return (
       <div class="canvas-area" vOn:contextmenu_prevent={noop}>
         <Ruler
-          startX={-29}
+          cid="canvas-content"
           thick={this.rulerThick}
           width={this.rootWidth}
           height={this.rootHeight}
@@ -181,8 +192,7 @@ export default {
           onLineUpdate={this.handleRulerLineUpdate}
         >
           <div
-            class="content"
-            style={this.contentStyles}
+            class="content-wrap"
             onMouseenter={
               this.isWidgetSelected ? this.handleContentMouseenter : noop
             }
@@ -191,30 +201,34 @@ export default {
               state.isInCanvasArea ? this.handleContentMouseleave : noop
             }
           >
-            {this.widgets.map((widget) => (
-              <Draggable
-                left={widget.left}
-                top={widget.top}
-                width={200}
-                height={200}
-                gap={this.draggableGap}
-                offsetX={this.offsetX}
-                offsetY={this.offsetY}
-                scale={this.scale}
-                adsorptionDistance={this.adsorptionDistance}
-                parentWidth={this.contentWidth}
-                parentHeight={this.contentHeight}
-                adsorpLefts={this.adsorpLefts}
-                adsorpTops={this.adsorpTops}
-                vOn:contextmenu_native={this.handleDraggableContextmenu}
-                onMousedown={this.draggableMousedown.bind(this, widget)}
-              >
-                <widget.component></widget.component>
-              </Draggable>
-            ))}
+            <div id="canvas-content" class="content" style={this.contentStyles}>
+              {this.widgets.map((widget, index) => (
+                <Draggable
+                  style={{
+                    left: widget.style.left + 'px',
+                    top: widget.style.top + 'px',
+                    transform: `rotate(${widget.style.rotate}deg)`
+                  }}
+                  styles={widget.style}
+                  gap={this.draggableGap}
+                  scale={this.scale}
+                  adsorptionDistance={this.adsorptionDistance}
+                  parentWidth={this.contentWidth}
+                  parentHeight={this.contentHeight}
+                  adsorpLefts={this.adsorpLefts}
+                  adsorpTops={this.adsorpTops}
+                  vOn:contextmenu_native={this.handleDraggableContextmenu}
+                  vOn:move={this.handleDraggableMove.bind(this, index)}
+                  vOn:rotate={this.handleDraggableRotate.bind(this, index)}
+                  onMousedown={this.draggableMousedown.bind(this, widget)}
+                >
+                  <widget.component></widget.component>
+                </Draggable>
+              ))}
 
-            {/* 占位 */}
-            <div class="seize-seat" style={this.seizeSeatStyles}></div>
+              {/* 占位 */}
+              <div class="seize-seat" style={this.seizeSeatStyles}></div>
+            </div>
           </div>
         </Ruler>
 
@@ -240,19 +254,28 @@ export default {
 .canvas-area {
   position: relative;
   width: calc(100vw - 600px);
-  .content {
-    overflow: hidden;
-    background-color: #a4d3e1;
-
-    .seize-seat {
-      opacity: 0;
+  .content-wrap {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    .content {
+      background-color: #a4d3e1;
       position: absolute;
-      width: 300px;
-      height: 200px;
-      pointer-events: none;
-      background: #e3e6e8;
-      box-shadow: 0px 0px 4px -2px grey;
-      transition: opacity 0.5s ease;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin: auto;
+      .seize-seat {
+        opacity: 0;
+        position: absolute;
+        width: 300px;
+        height: 200px;
+        pointer-events: none;
+        background: #e3e6e8;
+        box-shadow: 0px 0px 4px -2px grey;
+        transition: opacity 0.5s ease;
+      }
     }
   }
 }

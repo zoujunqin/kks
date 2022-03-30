@@ -89,10 +89,10 @@ const props = {
   }
 }
 
-import { calcWidgetPosition, calcPosAtScale } from '@/utils/widgets'
+import { calcPosAtScale } from '@/utils/widgets'
 
 // 八个点
-const points = ['lt', 't', 'rt', 'r', 'rb', 'b', 'lb', 'l']
+const points = ['lt', 'tm', 'rt', 'rc', 'rb', 'bm', 'lb', 'lc']
 
 function genMaskStyle() {
   return {
@@ -101,13 +101,35 @@ function genMaskStyle() {
   }
 }
 
-function genPointStyle(point) {
-  console.log(point)
+function getPointStyle(point) {
+  let left = 0
+  let top = 0
+  const isT = /t/.test(point)
+  const isL = /l/.test(point)
+  const isR = /r/.test(point)
+  const isB = /b/.test(point)
+  const isC = /c/.test(point)
+  const isM = /m/.test(point)
+
+  const { width, height } = this.styles
+  const halfPointThick = this.stretchPointThick / 2
+
+  if (isL) left = 0
+  if (isR) left = width
+  if (isM) left = width / 2
+  if (isT) top = 0
+  if (isB) top = height
+  if (isC) top = height / 2
+
   return {
+    left: left + 'px',
+    top: top + 'px',
     width: this.stretchPointThick + 'px',
     height: this.stretchPointThick + 'px',
     background: this.stretchPointBackground,
-    'border-radius': this.stretchPointThick / 2 + 'px'
+    'margin-left': -halfPointThick + 'px',
+    'margin-top': -halfPointThick + 'px',
+    'border-radius': halfPointThick + 'px'
   }
 }
 export default {
@@ -115,7 +137,6 @@ export default {
   data() {
     return {
       // 存储事件信息
-      mousedown: null,
       pointMousedown: null,
 
       points
@@ -182,7 +203,7 @@ export default {
           break
       }
     },
-    handlePointMousedown(sd, e) {
+    handlePointDown(sd, e) {
       const { offsetWidth, offsetHeight, offsetLeft, offsetTop } = this.$el
       this.pointMousedown = {
         e,
@@ -196,42 +217,69 @@ export default {
       window.addEventListener('mouseup', this.pointUpListener)
     },
 
-    upListener() {
-      this.mousedown = null
-      window.removeEventListener('mousemove', this.moveListener)
-      window.removeEventListener('mouseup', this.upListener)
-    },
-    moveListener(e) {
-      e.preventDefault()
-      const { e: oe, width, height } = this.mousedown
-      const { offsetX: cursorOffsetX, offsetY: cursorOffsetY } = oe
-
-      const { left, top } = calcWidgetPosition({
-        e,
-        width,
-        height,
-        parentWidth: this.parentWidth,
-        parentHeight: this.parentHeight,
-        gap: this.gap,
-        parentOffsetX: this.offsetX,
-        parentOffsetY: this.offsetY,
-        addis: this.adsorptionDistance,
-        adsorpLefts: this.adsorpLefts,
-        adsorpTops: this.adsorpTops,
-        scale: this.scale,
-        cursorOffsetX,
-        cursorOffsetY
-      })
-      this.usedLeft = left
-      this.usedTop = top
-    },
-    handleMousedown(e) {
+    // root 鼠标按下
+    handleDown(e) {
       this.$emit('mousedown')
 
-      const { offsetWidth, offsetHeight } = this.$el
-      this.mousedown = { e, width: offsetWidth, height: offsetHeight }
-      window.addEventListener('mousemove', this.moveListener)
-      window.addEventListener('mouseup', this.upListener)
+      const start = {
+        x: e.clientX,
+        y: e.clientY
+      }
+
+      const origin = {
+        left: this.styles.left * this.scale,
+        top: this.styles.top * this.scale
+      }
+
+      const style = {}
+
+      const move = (me) => {
+        me.preventDefault()
+
+        const current = {
+          x: me.clientX,
+          y: me.clientY
+        }
+
+        const diff = {
+          x: current.x - start.x,
+          y: current.y - start.y
+        }
+
+        style.left = calcPosAtScale(origin.left + diff.x, this.scale)
+        style.top = calcPosAtScale(origin.top + diff.y, this.scale)
+        console.log(style.left)
+        console.log(style.top)
+
+        this.$emit('move', style)
+
+        // const { left, top } = calcWidgetPosition({
+        //   e: me,
+        //   width,
+        //   height,
+        //   parentWidth: this.parentWidth,
+        //   parentHeight: this.parentHeight,
+        //   gap: this.gap,
+        //   parentOffsetX: this.offsetX,
+        //   parentOffsetY: this.offsetY,
+        //   addis: this.adsorptionDistance,
+        //   adsorpLefts: this.adsorpLefts,
+        //   adsorpTops: this.adsorpTops,
+        //   scale: this.scale,
+        //   cursorOffsetX: offsetX,
+        //   cursorOffsetY: offsetY
+        // })
+        // this.usedLeft = left
+        // this.usedTop = top
+      }
+
+      const up = () => {
+        window.removeEventListener('mousemove', move)
+        window.removeEventListener('mouseup', up)
+      }
+
+      window.addEventListener('mousemove', move)
+      window.addEventListener('mouseup', up)
     },
 
     // 旋转
@@ -241,7 +289,7 @@ export default {
       // 初始坐标和初始角度
       const startY = e.clientY
       const startX = e.clientX
-      const startRotate = this.usedRotate
+      const startRotate = this.styles.rotate || 0
 
       // 获取元素中心点位置
       const rect = this.$el.getBoundingClientRect()
@@ -258,9 +306,11 @@ export default {
         // 旋转后的角度
         const rotateDegreeAfter =
           Math.atan2(curY - centerY, curX - centerX) / (Math.PI / 180)
-        // 获取旋转的角度值
-        this.usedRotate =
+
+        this.$emit(
+          'rotate',
           startRotate + Math.ceil(rotateDegreeAfter - rotateDegreeBefore)
+        )
       }
 
       const up = () => {
@@ -275,11 +325,7 @@ export default {
 
   render() {
     return (
-      <div
-        class="draggable-wrap"
-        style={this.styles}
-        vOn:mousedown_prevent={this.handleMousedown}
-      >
+      <div class="draggable-wrap" vOn:mousedown_prevent={this.handleDown}>
         <div
           class="draggable-rotate"
           vOn:mousedown_stop_prevent={this.handleRotate}
@@ -290,11 +336,8 @@ export default {
         {points.map((point) => (
           <i
             class="stretch-point"
-            style={genPointStyle.call(this, point)}
-            vOn:mousedown_stop_prevent={this.handlePointMousedown.bind(
-              this,
-              point
-            )}
+            style={getPointStyle.call(this, point)}
+            vOn:mousedown_stop_prevent={this.handlePointDown.bind(this, point)}
           />
         ))}
 

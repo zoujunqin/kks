@@ -3,6 +3,7 @@ import RulerTick from './RulerTick.vue'
 import RulerLine from './RulerLine'
 /**
  * @desc 标尺组件 默认的 slot 只能是一个子节点
+ * @property {String} cid content id
  * @property {Number} thick 标尺左上角交叉处的宽度和高度
  * @property {Number} slotWidth slot容器的宽度，略大于 content
  * @property {Number} slotHeight slot容器的高度，略大于 content
@@ -31,6 +32,11 @@ import RulerLine from './RulerLine'
  */
 export default {
   props: {
+    cid: {
+      type: String,
+      default: 'content',
+      required: true
+    },
     thick: {
       type: Number,
       default: 20
@@ -146,7 +152,9 @@ export default {
       showMovableLine: false,
       movableLineIsVertical: false,
 
-      pointerEvents: 'unset'
+      pointerEvents: 'unset',
+
+      contentEl: null
     }
   },
 
@@ -240,7 +248,7 @@ export default {
           : Math.max(this.scaleMin, this.scale - ss)
         ).toFixed(2)
 
-        this.$slots.default[0].elm.style.transform = `scale(${this.scale})`
+        this.contentEl.style.transform = `scale(${this.scale})`
         this.handleScroll()
       }
     },
@@ -293,6 +301,8 @@ export default {
 
   mounted() {
     this.$nextTick(this.setScroll)
+
+    this.contentEl = document.querySelector('#' + this.cid)
 
     const rawKeydown = document.onkeydown
     document.onkeydown = (e) => {
@@ -446,17 +456,6 @@ export default {
     width: 100%;
     height: 100%;
     overflow: scroll;
-    & > div {
-      position: relative;
-      & > div {
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        margin: auto;
-      }
-    }
   }
 }
 </style>

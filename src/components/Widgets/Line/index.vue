@@ -54,8 +54,8 @@ export default {
         draggable
         options={this.chartOption}
         style={this.styles}
-        width="100%"
-        height="100%"
+        width="200px"
+        height="200px"
       ></Echart>
     )
   }
