@@ -1,6 +1,6 @@
 <script>
 import AddedWidgets from '@/views/draw-center/AddedWidgets'
-import CanvasArea from '@/views/draw-center/CanvasArea'
+import Area from '@/views/draw-center/area/index'
 import ConfigPanel from '@/views/draw-center/ConfigPanel'
 import CommonUse from '@/views/draw-center/CommonUse'
 import Widgets from '@/views/draw-center/Widgets'
@@ -34,17 +34,11 @@ export default {
 
     // 窗口改变触发各组件resize方法
     resize() {
-      const {
-        Widgets,
-        CommonUse,
-        AddedWidgets,
-        CanvasArea,
-        ConfigPanel
-      } = this.$refs
+      const { Widgets, CommonUse, AddedWidgets, Area, ConfigPanel } = this.$refs
       Widgets?.resize && Widgets.resize()
       CommonUse?.resize && CommonUse.resize()
       AddedWidgets?.resize && AddedWidgets.resize()
-      CanvasArea?.resize && CanvasArea.resize()
+      Area?.resize && Area.resize()
       ConfigPanel?.resize && ConfigPanel.resize()
     }
   },
@@ -71,7 +65,7 @@ export default {
         </div>
         <div class="bottom">
           <AddedWidgets ref="AddedWidgets"></AddedWidgets>
-          <CanvasArea ref="CanvasArea"></CanvasArea>
+          <Area ref="Area"></Area>
           <ConfigPanel ref="ConfigPanel" option={this.option}></ConfigPanel>
         </div>
 

@@ -1,10 +1,10 @@
 <script>
-import Ruler from '@/components/Ruler/index'
-import Contextmenu from '@/components/Contextmenu/index'
-import Draggable from '@/components/Draggable/index'
-import { state, mutations } from './observer'
+import Ruler from './Ruler/index'
+import Contextmenu from './Contextmenu/index'
+import Draggable from './Draggable/index'
+import { state, mutations } from '../observer'
 import { noop } from '@/utils'
-import { calcWidgetPosition } from '@/utils/widgets'
+import { calcPosAtScale, calcWidgetPosition } from '@/utils/widgets'
 
 import ClipboardJs from 'clipboard'
 
@@ -36,7 +36,10 @@ export default {
       contextmenuStyles: {},
 
       clipboard: null,
-      clipText: 'text'
+      clipText: 'text',
+
+      // 标尺的线是否可操作
+      rulerLineOpera: true
     }
   },
 
@@ -82,8 +85,8 @@ export default {
 
     // 标尺滚动和缩放触发
     handleTransform({ sx, sy, scale }) {
-      this.cx = sx
-      this.cy = sy
+      this.cx = -sx
+      this.cy = -sy
       this.scale = scale
     },
     handleRulerLineUpdate(lines) {
@@ -96,35 +99,44 @@ export default {
       }
     },
     handleContentMouseenter() {
+      this.rulerLineOpera = false
       mutations.setInCanvasArea(true)
-      const rawMousemove = document.onmousemove
-      document.onmousemove = (e) => {
-        console.log(e)
-        rawMousemove && rawMousemove.call(document, e)
+
+      const move = (e) => {
         if (!state.isInCanvasArea) return
-        const { left, top } = calcWidgetPosition({
-          e,
+
+        const { clientX, clientY } = e
+        const left = calcPosAtScale(clientX - this.cx - 220, this.scale)
+        const top = calcPosAtScale(clientY - this.cy - 80, this.scale)
+
+        const { left: newLeft, top: newTop } = calcWidgetPosition({
+          top,
+          left,
           width: 300,
           height: 200,
           parentWidth: this.contentWidth,
           parentHeight: this.contentHeight,
           gap: this.draggableGap,
-          parentOffsetX: this.cx + 220,
-          parentOffsetY: this.cy + 80,
           addis: this.adsorptionDistance,
           adsorpLefts: this.adsorpLefts,
-          adsorpTops: this.adsorpTops,
-          scale: this.scale,
-          cursorOffsetX: 0,
-          cursorOffsetY: 0
+          adsorpTops: this.adsorpTops
         })
 
         this.seizeSeatStyles = {
-          left: left + 'px',
-          top: top + 'px',
+          left: newLeft + 'px',
+          top: newTop + 'px',
           opacity: 1
         }
       }
+
+      const up = () => {
+        this.rulerLineOpera = true
+        window.removeEventListener('mousemove', move)
+        window.removeEventListener('mouseup', up)
+      }
+
+      window.addEventListener('mousemove', move)
+      window.addEventListener('mouseup', up)
     },
     handleContentMouseleave() {
       mutations.setInCanvasArea(false)
@@ -181,11 +193,10 @@ export default {
       <div class="canvas-area" vOn:contextmenu_prevent={noop}>
         <Ruler
           cid="canvas-content"
+          opera={this.rulerLineOpera}
           thick={this.rulerThick}
           width={this.rootWidth}
           height={this.rootHeight}
-          slotWidth={1610}
-          slotHeight={1000}
           contentWidth={this.contentWidth}
           contentHeight={this.contentHeight}
           onTransform={this.handleTransform}

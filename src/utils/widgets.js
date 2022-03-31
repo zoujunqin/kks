@@ -1,5 +1,6 @@
 import { flatArray } from './array'
 import { adsorbent } from './adsorbent'
+import { cos, sin } from './translate'
 
 const styleRegExp = /^style\./
 const propsRegExp = /^props\./
@@ -44,39 +45,23 @@ export function setupTransform(setup, field) {
  *                  }
  */
 export function calcWidgetPosition({
-  e,
+  left,
+  top,
   width,
   height,
   parentWidth,
   parentHeight,
   gap,
-  parentOffsetX,
-  parentOffsetY,
   addis,
   adsorpLefts,
-  adsorpTops,
-  scale,
-  cursorOffsetX,
-  cursorOffsetY
+  adsorpTops
 }) {
-  const { pageX, pageY } = e
   const ll = gap - width
   const rl = parentWidth - gap
   const tl = gap - height
   const bl = parentHeight - gap
-  // 在缩放下，offset表示的是真实的 px，处理后再计算 。然后转成真实的 px
-  let left = calcPosAtScale(
-    pageX - cursorOffsetX * scale - parentOffsetX,
-    scale,
-    1
-  )
   left = adsorbent(left <= ll ? ll : left >= rl ? rl : left, addis, adsorpLefts)
 
-  let top = calcPosAtScale(
-    pageY - cursorOffsetY * scale - parentOffsetY,
-    scale,
-    1
-  )
   top = adsorbent(top <= tl ? tl : top >= bl ? bl : top, addis, adsorpTops)
 
   return { left, top }
@@ -84,4 +69,30 @@ export function calcWidgetPosition({
 
 export function calcPosAtScale(pos, scale, fixed = 1) {
   return +(pos / scale).toFixed(fixed)
+}
+
+// 获取旋转后的样式
+export function getRotatedStyle(style) {
+  style = { ...style }
+  if (style.rotate != 0) {
+    const newWidth =
+      style.width * cos(style.rotate) + style.height * sin(style.rotate)
+    const diffX = (style.width - newWidth) / 2 // 旋转后范围变小是正值，变大是负值
+    style.left += diffX
+    style.right = style.left + newWidth
+
+    const newHeight =
+      style.height * cos(style.rotate) + style.width * sin(style.rotate)
+    const diffY = (newHeight - style.height) / 2 // 始终是正
+    style.top -= diffY
+    style.bottom = style.top + newHeight
+
+    style.width = newWidth
+    style.height = newHeight
+  } else {
+    style.bottom = style.top + style.height
+    style.right = style.left + style.width
+  }
+
+  return style
 }

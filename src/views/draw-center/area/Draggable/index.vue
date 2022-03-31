@@ -89,7 +89,11 @@ const props = {
   }
 }
 
-import { calcPosAtScale } from '@/utils/widgets'
+import {
+  calcPosAtScale,
+  calcWidgetPosition
+  // getRotatedStyle
+} from '@/utils/widgets'
 
 // 八个点
 const points = ['lt', 'tm', 'rt', 'rc', 'rb', 'bm', 'lb', 'lc']
@@ -221,14 +225,16 @@ export default {
     handleDown(e) {
       this.$emit('mousedown')
 
+      const { width, height, left, top } = this.styles
+
       const start = {
         x: e.clientX,
         y: e.clientY
       }
 
       const origin = {
-        left: this.styles.left * this.scale,
-        top: this.styles.top * this.scale
+        left: left * this.scale,
+        top: top * this.scale
       }
 
       const style = {}
@@ -246,31 +252,26 @@ export default {
           y: current.y - start.y
         }
 
-        style.left = calcPosAtScale(origin.left + diff.x, this.scale)
-        style.top = calcPosAtScale(origin.top + diff.y, this.scale)
-        console.log(style.left)
-        console.log(style.top)
+        const left = calcPosAtScale(origin.left + diff.x, this.scale)
+        const top = calcPosAtScale(origin.top + diff.y, this.scale)
 
         this.$emit('move', style)
 
-        // const { left, top } = calcWidgetPosition({
-        //   e: me,
-        //   width,
-        //   height,
-        //   parentWidth: this.parentWidth,
-        //   parentHeight: this.parentHeight,
-        //   gap: this.gap,
-        //   parentOffsetX: this.offsetX,
-        //   parentOffsetY: this.offsetY,
-        //   addis: this.adsorptionDistance,
-        //   adsorpLefts: this.adsorpLefts,
-        //   adsorpTops: this.adsorpTops,
-        //   scale: this.scale,
-        //   cursorOffsetX: offsetX,
-        //   cursorOffsetY: offsetY
-        // })
-        // this.usedLeft = left
-        // this.usedTop = top
+        const { left: newLeft, top: newTop } = calcWidgetPosition({
+          top,
+          left,
+          width,
+          height,
+          parentWidth: this.parentWidth,
+          parentHeight: this.parentHeight,
+          gap: this.gap,
+          addis: this.adsorptionDistance,
+          adsorpLefts: this.adsorpLefts,
+          adsorpTops: this.adsorpTops,
+          scale: this.scale
+        })
+        style.left = newLeft
+        style.top = newTop
       }
 
       const up = () => {
@@ -343,9 +344,9 @@ export default {
 
         {this.active && (
           <div class="tip">
-            <div>x: {this.usedLeft}</div>
-            <div>y: {this.usedTop}</div>
-            <div>r: {this.usedRotate}</div>
+            <div>x: {this.styles.left}</div>
+            <div>y: {this.styles.top}</div>
+            <div>r: {this.styles.rotate}</div>
           </div>
         )}
 

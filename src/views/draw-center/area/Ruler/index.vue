@@ -5,8 +5,6 @@ import RulerLine from './RulerLine'
  * @desc 标尺组件 默认的 slot 只能是一个子节点
  * @property {String} cid content id
  * @property {Number} thick 标尺左上角交叉处的宽度和高度
- * @property {Number} slotWidth slot容器的宽度，略大于 content
- * @property {Number} slotHeight slot容器的高度，略大于 content
  * @property {String} slotBackground slot容器的背景色
  * @property {Number} contentWidth 内容宽度
  * @property {Number} contentHeight 内容高度
@@ -30,8 +28,16 @@ import RulerLine from './RulerLine'
  * @property {String} mlIndicatorColor 移动参考线显示值字体颜色
  * @property {String} cornerBackground 标尺左上角交叉背景色
  */
+
+function operaMap(opera) {
+  return opera ? 'unset' : 'none'
+}
 export default {
   props: {
+    opera: {
+      type: Boolean,
+      default: true
+    },
     cid: {
       type: String,
       default: 'content',
@@ -40,14 +46,6 @@ export default {
     thick: {
       type: Number,
       default: 20
-    },
-    slotWidth: {
-      type: Number,
-      default: 2000
-    },
-    slotHeight: {
-      type: Number,
-      default: 1000
     },
     slotBackground: {
       type: String,
@@ -152,13 +150,19 @@ export default {
       showMovableLine: false,
       movableLineIsVertical: false,
 
-      pointerEvents: 'unset',
+      pointerEvents: operaMap(this.opera),
 
       contentEl: null
     }
   },
 
   computed: {
+    slotWidth() {
+      return this.contentWidth * 1.5
+    },
+    slotHeight() {
+      return this.contentHeight * 1.5
+    },
     // 水平刻度尺宽度
     tickWidth() {
       return this.width - this.thick
@@ -198,6 +202,12 @@ export default {
         'padding-left': `${this.thick}px`,
         'padding-top': `${this.thick}px`
       }
+    }
+  },
+
+  watch: {
+    opera() {
+      this.pointerEvents = operaMap(this.opera)
     }
   },
 
