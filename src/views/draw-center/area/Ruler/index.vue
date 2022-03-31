@@ -242,8 +242,8 @@ export default {
         scrollTop - (this.slotHeight - this.contentHeight * this.scale) / 2
 
       this.$emit('transform', {
-        sx: this.sx,
-        sy: this.sy,
+        startx: this.sx,
+        starty: this.sy,
         scale: this.scale
       })
     },

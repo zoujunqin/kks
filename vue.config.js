@@ -35,38 +35,38 @@ module.exports = {
     config.plugins.delete('prefetch')
     config.plugins.delete('preload')
 
-    config.when(envIsProd, (config) => {
-      config.plugin('dll-reference-plugin').use(webpack.DllReferencePlugin, [
-        {
-          context: process.cwd(),
-          manifest: require(`./public/vendor/${
-            Object.keys(entry)[0]
-          }-manifest.json`)
-        }
-      ])
+    // config.when(envIsProd, (config) => {
+    //   config.plugin('dll-reference-plugin').use(webpack.DllReferencePlugin, [
+    //     {
+    //       context: process.cwd(),
+    //       manifest: require(`./public/vendor/${
+    //         Object.keys(entry)[0]
+    //       }-manifest.json`)
+    //     }
+    //   ])
 
-      config
-        .plugin('add-asset-html-webpack-plugin')
-        .use(AddAssetHtmlWebpackPlugin, [
-          {
-            // dll文件位置
-            filepath: resolve('public/vendor/*.js'),
-            // dll 引用路径
-            publicPath: './vendor',
-            // dll最终输出的目录
-            outputPath: './vendor'
-          }
-        ])
-        .after('dll-reference-plugin')
+    //   config
+    //     .plugin('add-asset-html-webpack-plugin')
+    //     .use(AddAssetHtmlWebpackPlugin, [
+    //       {
+    //         // dll文件位置
+    //         filepath: resolve('public/vendor/*.js'),
+    //         // dll 引用路径
+    //         publicPath: './vendor',
+    //         // dll最终输出的目录
+    //         outputPath: './vendor'
+    //       }
+    //     ])
+    //     .after('dll-reference-plugin')
 
-      config
-        .plugin('hard-source-webpack-plugin')
-        .use(HardSourceWebpackPlugin)
-        .after('dll-reference-plugin')
+    //   config
+    //     .plugin('hard-source-webpack-plugin')
+    //     .use(HardSourceWebpackPlugin)
+    //     .after('dll-reference-plugin')
 
-      // 分析相关
-      createWebpackBundleAnalyzer(config)
-    })
+    //   // 分析相关
+    //   createWebpackBundleAnalyzer(config)
+    // })
 
     config.plugin('purgecss-webpack-plugin').use(PurgecssWebpackPlugin, [
       {

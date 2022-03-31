@@ -1,8 +1,8 @@
 <script>
 /**
  * @property {Number} styles
- * @property {Number} offsetX 当前组件所在的父级容器距离可视窗口的 x
- * @property {Number} offsetY 当前组件所在的父级容器距离可视窗口的 Y
+ * @property {Number} rulerStartx
+ * @property {Number} rulerStarty
  * @property {Number} scale 缩放值
  * @property {Number} gap 当前组件移动时限制 gap px 在父级容器中
  * @property {Number} parentWidth 当前组件所在的父级容器的宽度
@@ -35,13 +35,13 @@ const props = {
     type: Number,
     default: 0
   },
-  offsetX: {
+  rulerStartx: {
     type: Number,
-    default: 220
+    default: 0
   },
-  offsetY: {
+  rulerStarty: {
     type: Number,
-    default: 80
+    default: 0
   },
   gap: {
     type: Number,
@@ -89,11 +89,10 @@ const props = {
   }
 }
 
-import {
-  calcPosAtScale,
-  calcWidgetPosition
-  // getRotatedStyle
-} from '@/utils/widgets'
+import // calcWidgetPosition
+// getRotatedStyle
+'@/utils/widgets'
+import { calcOnReverseScale, calcOnScale } from '@/utils/scale'
 
 // 八个点
 const points = ['lt', 'tm', 'rt', 'rc', 'rb', 'bm', 'lb', 'lc']
@@ -142,12 +141,54 @@ export default {
     return {
       // 存储事件信息
       pointMousedown: null,
+      moveEvent: null,
 
-      points
+      points,
+
+      down: false,
+
+      startLeft: 0,
+      startTop: 0,
+      newStartLeft: 0,
+      newStartTop: 0,
+      oldRulerStartx: 0,
+      oldRulerStarty: 0,
+      sl: 0,
+      st: 0,
+
+      mcx: 0,
+      mcy: 0
+    }
+  },
+
+  watch: {
+    rulerStartx(val) {
+      if (!this.down) return
+      this.mcx = this.moveEvent.clientX
+
+      const diff = this.oldRulerStartx - val
+      this.startLeft = this.newStartLeft - diff
+      const style = {
+        left: calcOnReverseScale(this.startLeft, this.scale)
+      }
+      this.$emit('move', style)
+    },
+
+    rulerStarty(val) {
+      if (!this.down) return
+      this.mcy = this.moveEvent.clientY
+
+      const diff = this.oldRulerStarty - val
+      this.startTop = this.newStartTop - diff
+      const style = {
+        top: calcOnScale(this.startTop, this.scale)
+      }
+      this.$emit('move', style)
     }
   },
 
   methods: {
+    updateLeft() {},
     pointUpListener() {
       this.pointMousedown = null
       window.removeEventListener('mousemove', this.pointMoveListener)
@@ -165,8 +206,8 @@ export default {
       const { clientX, clientY } = e
 
       // 以下计算都是基于物理像素
-      const left = calcPosAtScale(clientX - this.offsetX, this.scale)
-      const top = calcPosAtScale(clientY - this.offsetY, this.scale)
+      const left = calcOnReverseScale(clientX - this.offsetX, this.scale)
+      const top = calcOnReverseScale(clientY - this.offsetY, this.scale)
       const diffWidth = left - oleft
       const diffHeight = top - otop
 
@@ -223,64 +264,65 @@ export default {
 
     // root 鼠标按下
     handleDown(e) {
-      this.$emit('mousedown')
+      this.down = true
+      const { left, top } = this.styles
 
-      const { width, height, left, top } = this.styles
-
-      const start = {
-        x: e.clientX,
-        y: e.clientY
-      }
-
-      const origin = {
-        left: left * this.scale,
-        top: top * this.scale
-      }
+      this.mcx = e.clientX
+      this.mcy = e.clientY
+      this.startLeft = left
+      this.startTop = top
+      this.oldRulerStartx = this.rulerStartx
+      this.oldRulerStarty = this.rulerStarty
 
       const style = {}
-
       const move = (me) => {
-        me.preventDefault()
+        this.moveEvent = me
+        const curx = me.clientX
+        const cury = me.clientY
 
-        const current = {
-          x: me.clientX,
-          y: me.clientY
-        }
+        // reverse scale 和 scale 抵消才是真实的长度
+        const left = calcOnReverseScale(
+          curx - this.mcx + this.startLeft,
+          this.scale
+        )
+        const top = calcOnReverseScale(
+          cury - this.mcy + this.startTop,
+          this.scale
+        )
 
-        const diff = {
-          x: current.x - start.x,
-          y: current.y - start.y
-        }
-
-        const left = calcPosAtScale(origin.left + diff.x, this.scale)
-        const top = calcPosAtScale(origin.top + diff.y, this.scale)
+        // const { left: newLeft, top: newTop } = calcWidgetPosition({
+        //   top,
+        //   left,
+        //   width,
+        //   height,
+        //   parentWidth: this.parentWidth,
+        //   parentHeight: this.parentHeight,
+        //   gap: this.gap,
+        //   addis: this.adsorptionDistance,
+        //   adsorpLefts: this.adsorpLefts,
+        //   adsorpTops: this.adsorpTops,
+        //   scale: this.scale
+        // })
+        this.oldRulerStartx = this.rulerStartx
+        this.oldRulerStarty = this.rulerStarty
+        this.newStartLeft = left
+        this.newStartTop = top
+        style.left = left
+        style.top = top
 
         this.$emit('move', style)
-
-        const { left: newLeft, top: newTop } = calcWidgetPosition({
-          top,
-          left,
-          width,
-          height,
-          parentWidth: this.parentWidth,
-          parentHeight: this.parentHeight,
-          gap: this.gap,
-          addis: this.adsorptionDistance,
-          adsorpLefts: this.adsorpLefts,
-          adsorpTops: this.adsorpTops,
-          scale: this.scale
-        })
-        style.left = newLeft
-        style.top = newTop
       }
 
       const up = () => {
+        this.down = false
         window.removeEventListener('mousemove', move)
         window.removeEventListener('mouseup', up)
       }
 
       window.addEventListener('mousemove', move)
       window.addEventListener('mouseup', up)
+
+      this.$emit('mousedown')
     },
 
     // 旋转

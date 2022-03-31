@@ -16,8 +16,9 @@ export default {
       rootHeight: 0,
 
       scale: 1,
-      cx: 0, // content 距离父容器的 x
-      cy: 0, // content 距离父容器的 y
+      rulerStartx: 0, // 横向标尺开始的刻度
+      rulerStarty: 0, // 竖向标尺开始的刻度
+
       contentWidth: 1600,
       contentHeight: 800,
 
@@ -84,9 +85,9 @@ export default {
     },
 
     // 标尺滚动和缩放触发
-    handleTransform({ sx, sy, scale }) {
-      this.cx = -sx
-      this.cy = -sy
+    handleTransform({ startx, starty, scale }) {
+      this.rulerStartx = startx
+      this.rulerStarty = starty
       this.scale = scale
     },
     handleRulerLineUpdate(lines) {
@@ -106,8 +107,14 @@ export default {
         if (!state.isInCanvasArea) return
 
         const { clientX, clientY } = e
-        const left = calcPosAtScale(clientX - this.cx - 220, this.scale)
-        const top = calcPosAtScale(clientY - this.cy - 80, this.scale)
+        const left = calcPosAtScale(
+          clientX - (220 - this.rulerStartx),
+          this.scale
+        )
+        const top = calcPosAtScale(
+          clientY - (80 - this.rulerStarty),
+          this.scale
+        )
 
         const { left: newLeft, top: newTop } = calcWidgetPosition({
           top,
@@ -223,6 +230,8 @@ export default {
                   styles={widget.style}
                   gap={this.draggableGap}
                   scale={this.scale}
+                  rulerStartx={this.rulerStartx}
+                  rulerStarty={this.rulerStarty}
                   adsorptionDistance={this.adsorptionDistance}
                   parentWidth={this.contentWidth}
                   parentHeight={this.contentHeight}
@@ -231,7 +240,7 @@ export default {
                   vOn:contextmenu_native={this.handleDraggableContextmenu}
                   vOn:move={this.handleDraggableMove.bind(this, index)}
                   vOn:rotate={this.handleDraggableRotate.bind(this, index)}
-                  onMousedown={this.draggableMousedown.bind(this, widget)}
+                  vOn:mousedown={this.draggableMousedown.bind(this, widget)}
                 >
                   <widget.component></widget.component>
                 </Draggable>
