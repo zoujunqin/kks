@@ -236,15 +236,20 @@ export default {
       const scrollTop = rc.scrollTop
       const scrollLeft = rc.scrollLeft
 
-      this.sx =
-        scrollLeft - (this.slotWidth - this.contentWidth * this.scale) / 2
-      this.sy =
-        scrollTop - (this.slotHeight - this.contentHeight * this.scale) / 2
+      const gapLR = (this.slotWidth - this.contentWidth * this.scale) / 2
+      this.sx = scrollLeft - gapLR
+
+      const gapTB = (this.slotHeight - this.contentHeight * this.scale) / 2
+      this.sy = scrollTop - gapTB
 
       this.$emit('transform', {
         startx: this.sx,
         starty: this.sy,
-        scale: this.scale
+        scale: this.scale,
+        gapL: gapLR,
+        gapR: gapLR,
+        gapT: gapTB,
+        gapB: gapTB
       })
     },
     // 放大缩小执行

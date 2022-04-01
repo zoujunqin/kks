@@ -5,6 +5,7 @@ import Draggable from './Draggable/index'
 import { state, mutations } from '../observer'
 import { noop } from '@/utils'
 import { calcPosAtScale, calcWidgetPosition } from '@/utils/widgets'
+import { limitPosition } from '@/utils/position'
 
 import ClipboardJs from 'clipboard'
 
@@ -40,7 +41,12 @@ export default {
       clipText: 'text',
 
       // 标尺的线是否可操作
-      rulerLineOpera: true
+      rulerLineOpera: true,
+
+      gapL: 0,
+      gapR: 0,
+      gapT: 0,
+      gapB: 0
     }
   },
 
@@ -85,10 +91,14 @@ export default {
     },
 
     // 标尺滚动和缩放触发
-    handleTransform({ startx, starty, scale }) {
+    handleTransform({ gapL, gapR, gapT, gapB, startx, starty, scale }) {
       this.rulerStartx = startx
       this.rulerStarty = starty
       this.scale = scale
+      this.gapL = gapL
+      this.gapR = gapR
+      this.gapT = gapT
+      this.gapB = gapB
     },
     handleRulerLineUpdate(lines) {
       this.adsorpLefts = []
@@ -175,7 +185,25 @@ export default {
       mutations.setActivatedWidget(widget)
     },
     handleDraggableMove(index, style) {
-      this.widgets[index].style = { ...this.widgets[index].style, ...style }
+      const orStyle = this.widgets[index].style
+      // 限制拖拽
+      const limitStyle = limitPosition({
+        ...orStyle,
+        ...style,
+        limit: 5,
+        scale: this.scale,
+        gl: this.gapL,
+        gr: this.gapR,
+        gt: this.gapT,
+        gb: this.gapB,
+        pw: this.contentWidth,
+        ph: this.contentHeight
+      })
+      this.widgets[index].style = {
+        ...orStyle,
+        ...style,
+        ...limitStyle
+      }
     },
     handleDraggableRotate(index, rotate) {
       this.widgets[index].style = { ...this.widgets[index].style, rotate }
@@ -225,7 +253,10 @@ export default {
                   style={{
                     left: widget.style.left + 'px',
                     top: widget.style.top + 'px',
-                    transform: `rotate(${widget.style.rotate}deg)`
+                    width: widget.style.width + 'px',
+                    height: widget.style.height + 'px',
+                    transform: `rotate(${widget.style.rotate}deg)`,
+                    'transform-origin': widget.style['transform-origin']
                   }}
                   styles={widget.style}
                   gap={this.draggableGap}
@@ -278,6 +309,7 @@ export default {
     width: 100%;
     height: 100%;
     position: relative;
+    overflow: hidden;
     .content {
       background-color: #a4d3e1;
       position: absolute;

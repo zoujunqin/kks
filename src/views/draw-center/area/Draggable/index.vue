@@ -4,7 +4,7 @@
  * @property {Number} rulerStartx
  * @property {Number} rulerStarty
  * @property {Number} scale 缩放值
- * @property {Number} gap 当前组件移动时限制 gap px 在父级容器中
+ * @property {Number} limit 当前组件移动时限制 gap px 在父级容器中
  * @property {Number} parentWidth 当前组件所在的父级容器的宽度
  * @property {Number} parentHeight 当前组件所在的父级容器的高度
  * @property {Number} stretchPointThick 拉伸点的宽高
@@ -43,7 +43,7 @@ const props = {
     type: Number,
     default: 0
   },
-  gap: {
+  limit: {
     type: Number,
     default: 5
   },
@@ -93,6 +93,7 @@ import // calcWidgetPosition
 // getRotatedStyle
 '@/utils/widgets'
 import { calcOnReverseScale, calcOnScale } from '@/utils/scale'
+import { getRotatedPointCoordinate } from '@/utils/translate'
 
 // 八个点
 const points = ['lt', 'tm', 'rt', 'rc', 'rb', 'bm', 'lb', 'lc']
@@ -153,8 +154,6 @@ export default {
       newStartTop: 0,
       oldRulerStartx: 0,
       oldRulerStarty: 0,
-      sl: 0,
-      st: 0,
 
       mcx: 0,
       mcy: 0
@@ -167,7 +166,8 @@ export default {
       this.mcx = this.moveEvent.clientX
 
       const diff = this.oldRulerStartx - val
-      this.startLeft = this.newStartLeft - diff
+      // diff 是 scale 之后的，所以用 scale 之后的值计算，再转成实际的值
+      this.startLeft = calcOnScale(this.newStartLeft, this.scale) - diff
       const style = {
         left: calcOnReverseScale(this.startLeft, this.scale)
       }
@@ -179,98 +179,57 @@ export default {
       this.mcy = this.moveEvent.clientY
 
       const diff = this.oldRulerStarty - val
-      this.startTop = this.newStartTop - diff
+      // diff 是 scale 之后的，所以用 scale 之后的值计算，再转成实际的值
+      this.startTop = calcOnScale(this.newStartTop, this.scale) - diff
       const style = {
-        top: calcOnScale(this.startTop, this.scale)
+        top: calcOnReverseScale(this.startTop, this.scale)
       }
       this.$emit('move', style)
     }
   },
 
   methods: {
-    updateLeft() {},
-    pointUpListener() {
-      this.pointMousedown = null
-      window.removeEventListener('mousemove', this.pointMoveListener)
-      window.removeEventListener('mouseup', this.pointUpListener)
-    },
-    pointMoveListener(e) {
-      e.preventDefault()
-      const {
-        sd,
-        width: owidth,
-        height: oheight,
-        left: oleft,
-        top: otop
-      } = this.pointMousedown
-      const { clientX, clientY } = e
+    handlePointDown(d, e) {
+      const { width, height } = this.styles
+      const startX = e.clientX
+      const startY = e.clientY
 
-      // 以下计算都是基于物理像素
-      const left = calcOnReverseScale(clientX - this.offsetX, this.scale)
-      const top = calcOnReverseScale(clientY - this.offsetY, this.scale)
-      const diffWidth = left - oleft
-      const diffHeight = top - otop
+      const transformOriginX = width / 2
+      const transformOriginY = height / 2
 
-      switch (sd) {
-        case 'left-top-stretch-point':
-          this.usedLeft = left
-          this.usedTop = top
-          this.usedWidth = owidth - diffWidth
-          this.usedHeight = oheight - diffHeight
-          break
-        case 'top-stretch-point':
-          this.usedTop = top
-          this.usedHeight = oheight - diffHeight
-          break
-        case 'right-top-stretch-point':
-          this.usedTop = top
-          this.usedWidth = diffWidth
-          this.usedHeight = oheight - diffHeight
-          break
-        case 'left-stretch-point':
-          this.usedLeft = left
-          this.usedWidth = owidth - diffWidth
-          break
-        case 'right-stretch-point':
-          this.usedWidth = diffWidth
-          break
-        case 'left-bottom-stretch-point':
-          this.usedLeft = left
-          this.usedWidth = owidth - diffWidth
-          this.usedHeight = diffHeight
-          break
-        case 'bottom-stretch-point':
-          this.usedHeight = diffHeight
-          break
-        case 'right-bottom-stretch-point':
-          this.usedWidth = diffWidth
-          this.usedHeight = diffHeight
-          break
+      const move = (me) => {
+        const curX = me.clientX
+        const curY = me.clientY
+        const distance = Math.sqrt(
+          Math.pow(curX - startX, 2) + Math.pow(curY - startY, 2)
+        )
+        console.log(width + distance)
+        this.$emit('move', {
+          width: curX < startX ? width - distance : width + distance,
+          'transform-origin': `${transformOriginX}px ${transformOriginY}px`
+          // left: left - (curX - startX),
+          // top: top - (curY - startY)
+        })
       }
-    },
-    handlePointDown(sd, e) {
-      const { offsetWidth, offsetHeight, offsetLeft, offsetTop } = this.$el
-      this.pointMousedown = {
-        e,
-        sd,
-        width: offsetWidth,
-        height: offsetHeight,
-        left: offsetLeft,
-        top: offsetTop
+      const up = () => {
+        this.$emit('move', { 'transform-origin': 'center center' })
+        window.removeEventListener('mousemove', move)
+        window.removeEventListener('mouseup', up)
       }
-      window.addEventListener('mousemove', this.pointMoveListener)
-      window.addEventListener('mouseup', this.pointUpListener)
+
+      window.addEventListener('mousemove', move)
+      window.addEventListener('mouseup', up)
     },
 
-    // root 鼠标按下
+    // 鼠标按下
     handleDown(e) {
       this.down = true
       const { left, top } = this.styles
 
       this.mcx = e.clientX
       this.mcy = e.clientY
-      this.startLeft = left
-      this.startTop = top
+      this.startLeft = calcOnScale(left, this.scale)
+      this.startTop = calcOnScale(top, this.scale)
       this.oldRulerStartx = this.rulerStartx
       this.oldRulerStarty = this.rulerStarty
 
@@ -290,19 +249,6 @@ export default {
           this.scale
         )
 
-        // const { left: newLeft, top: newTop } = calcWidgetPosition({
-        //   top,
-        //   left,
-        //   width,
-        //   height,
-        //   parentWidth: this.parentWidth,
-        //   parentHeight: this.parentHeight,
-        //   gap: this.gap,
-        //   addis: this.adsorptionDistance,
-        //   adsorpLefts: this.adsorpLefts,
-        //   adsorpTops: this.adsorpTops,
-        //   scale: this.scale
-        // })
         this.oldRulerStartx = this.rulerStartx
         this.oldRulerStarty = this.rulerStarty
         this.newStartLeft = left
