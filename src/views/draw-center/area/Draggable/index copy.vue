@@ -45,9 +45,22 @@ export default {
     props,
     data() {
         return {
-            // handleDownOnRoot 方法中存储的事件
-            event: null,
-            startPoint: {},
+            // 存储事件信息
+            pointMousedown: null,
+            moveEvent: null,
+
+
+            down: false,
+
+            startLeft: 0,
+            startTop: 0,
+            newStartLeft: 0,
+            newStartTop: 0,
+            oldRulerStartx: 0,
+            oldRulerStarty: 0,
+
+            mcx: 0,
+            mcy: 0,
 
             points: ['lt', 'tm', 'rt', 'rc', 'rb', 'bm', 'lb', 'lc'],
             initialAngle: { // 每个点对应的初始角度
@@ -74,27 +87,35 @@ export default {
         }
     },
 
-    computed: {
-        // 画布信息
-        canvasRectInfo() {
-            return {
-                left: 220 - this.rulerStartx,
-                top: 80 - this.rulerStarty
-            }
-        }
-    },
-
     watch: {
-        canvasRectInfo() {
-            this.event && this.handleStyleByScroll(this.event, true)
+        rulerStartx(val) {
+            if (!this.down) return
+            this.mcx = this.moveEvent.clientX
+
+            const diff = this.oldRulerStartx - val
+            // diff 是 scale 之后的，所以用 scale 之后的值计算，再转成实际的值
+            this.startLeft = calcOnScale(this.newStartLeft, this.scale) - diff
+            const style = { left: calcOnReverseScale(this.startLeft, this.scale) }
+            this.$emit('move', style)
+        },
+
+        rulerStarty(val) {
+            if (!this.down) return
+            this.mcy = this.moveEvent.clientY
+
+            const diff = this.oldRulerStarty - val
+            // diff 是 scale 之后的，所以用 scale 之后的值计算，再转成实际的值
+            this.startTop = calcOnScale(this.newStartTop, this.scale) - diff
+            const style = { top: calcOnReverseScale(this.startTop, this.scale) }
+            this.$emit('move', style)
         }
     },
 
     methods: {
 
-        calcOnScale(distance) { return calcOnScale(distance, this.scale) },
+        calcOnScale(dis) { return calcOnScale(dis, this.scale) },
 
-        calcOnReverseScale(distance) { return calcOnReverseScale(distance, this.scale) },
+        calcOnReverseScale(dis) { return calcOnReverseScale(dis, this.scale) },
 
         getPointStyle(point) {
             let left = 0
@@ -186,7 +207,7 @@ export default {
             }
         },
 
-        handleDownOnPoint(point, e) {
+        handlePointDown(point, e) {
             e.stopPropagation(); e.preventDefault()
 
             const needLockProportion = false
@@ -199,27 +220,30 @@ export default {
             // 组件中心点
             const center = { x: style.left + style.width / 2, y: style.top + style.height / 2 }
 
+            // 获取画布位移信息
+            const editorRectInfo = { left: 220 - this.rulerStartx, top: 80 - this.rulerStarty }
+
             // 获取 point 与实际拖动基准点的差值 @justJokee
             // fix https://github.com/woai3c/visual-drag-demo/issues/26#issue-937686285
             const pointRect = e.target.getBoundingClientRect()
             // 当前点击圆点相对于画布的中心坐标
             const curPoint = {
-                x: pointRect.left - this.canvasRectInfo.left + e.target.offsetWidth / 2,
-                y: pointRect.top - this.canvasRectInfo.top + e.target.offsetHeight / 2,
+                x: pointRect.left - editorRectInfo.left + e.target.offsetWidth / 2,
+                y: pointRect.top - editorRectInfo.top + e.target.offsetHeight / 2,
             }
 
             // 获取对称点的坐标
             const symmetricPoint = { x: center.x - (curPoint.x - center.x), y: center.y - (curPoint.y - center.y) }
 
             const move = (moveEvent) => {
-                const curPositon = { x: moveEvent.clientX - this.canvasRectInfo.left, y: moveEvent.clientY - this.canvasRectInfo.top }
+                const curPositon = { x: moveEvent.clientX - editorRectInfo.left, y: moveEvent.clientY - editorRectInfo.top }
                 calculateComponentPositonAndSize(point, style, curPositon, proportion, needLockProportion, {
                     center,
                     curPoint,
                     symmetricPoint,
                 })
 
-                this.$emit('transform', this.backStyle(style))
+                this.$emit('move', this.backStyle(style))
 
             }
 
@@ -232,40 +256,46 @@ export default {
             window.addEventListener('mouseup', up)
         },
 
-        handleStyleByScroll(e) {
-            const { left: originLeft, top: originTop } = this.scaleStyle(this.styles)
-            const { x: prevStartX, y: prevStartY } = this.startPoint
-            const startX = e.clientX - this.canvasRectInfo.left
-            const startY = e.clientY - this.canvasRectInfo.top
+        // 鼠标按下
+        handleDown(e) {
+            this.down = true
+            const { left, top } = this.styles
 
-            const left = originLeft - (prevStartX - startX)
-            const top = originTop - (prevStartY - startY)
+            this.mcx = e.clientX
+            this.mcy = e.clientY
+            this.startLeft = calcOnScale(left, this.scale)
+            this.startTop = calcOnScale(top, this.scale)
+            this.oldRulerStartx = this.rulerStartx
+            this.oldRulerStarty = this.rulerStarty
 
-            this.$emit('transform', { left: this.calcOnReverseScale(left), top: this.calcOnReverseScale(top) })
-            this.startPoint = { x: startX, y: startY }
-        },
+            const style = {}
+            const move = (me) => {
+                this.moveEvent = me
+                const curx = me.clientX
+                const cury = me.clientY
 
-        handleDownOnRoot(e) {
-            this.event = e
-            const { left: originLeft, top: originTop } = this.scaleStyle(this.styles)
+                // reverse scale 和 scale 抵消才是真实的长度
+                const left = calcOnReverseScale(
+                    curx - this.mcx + this.startLeft,
+                    this.scale
+                )
+                const top = calcOnReverseScale(
+                    cury - this.mcy + this.startTop,
+                    this.scale
+                )
 
-            const startX = e.clientX - this.canvasRectInfo.left
-            const startY = e.clientY - this.canvasRectInfo.top
+                this.oldRulerStartx = this.rulerStartx
+                this.oldRulerStarty = this.rulerStarty
+                this.newStartLeft = left
+                this.newStartTop = top
+                style.left = left
+                style.top = top
 
-            this.startPoint = { x: startX, y: startY }
-
-            const move = moveEvent => {
-                const curX = moveEvent.clientX - this.canvasRectInfo.left
-                const curY = moveEvent.clientY - this.canvasRectInfo.top
-
-                const left = curX - startX + originLeft
-                const top = curY - startY + originTop
-
-                this.$emit('transform', { left: this.calcOnReverseScale(left), top: this.calcOnReverseScale(top) })
+                this.$emit('move', style)
             }
 
             const up = () => {
-                this.event = this.startPoint = null
+                this.down = false
                 window.removeEventListener('mousemove', move)
                 window.removeEventListener('mouseup', up)
             }
@@ -301,7 +331,7 @@ export default {
                 const rotateDegreeAfter =
                     Math.atan2(curY - centerY, curX - centerX) / (Math.PI / 180)
 
-                this.$emit('transform', { rotate: startRotate + Math.ceil(rotateDegreeAfter - rotateDegreeBefore) })
+                this.$emit('rotate', startRotate + Math.ceil(rotateDegreeAfter - rotateDegreeBefore))
             }
 
             const up = () => {
@@ -317,7 +347,7 @@ export default {
 
     render() {
         return (
-            <div class="draggable-wrap" vOn:mousedown_prevent={this.handleDownOnRoot}>
+            <div class="draggable-wrap" vOn:mousedown_prevent={this.handleDown}>
                 <div class="draggable-rotate" vOn:mousedown_stop_prevent={this.handleRotate} >
                     <svg-icon icon-class="rotate" size="16" />
                 </div>
@@ -327,7 +357,7 @@ export default {
                         <i
                             class="stretch-point"
                             style={this.getPointStyle(point)}
-                            vOn:mousedown_stop_prevent={this.handleDownOnPoint.bind(this, point)}
+                            vOn:mousedown_stop_prevent={this.handlePointDown.bind(this, point)}
                         />
                     )
                 }
