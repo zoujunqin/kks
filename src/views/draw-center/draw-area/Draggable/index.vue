@@ -318,11 +318,13 @@ export default {
     render() {
         return (
             <div class="draggable-wrap" vOn:mousedown_prevent={this.handleDownOnRoot}>
-                <div class="draggable-rotate" vOn:mousedown_stop_prevent={this.handleRotate} >
-                    <svg-icon icon-class="rotate" size="16" />
-                </div>
-
                 {
+                    this.active &&
+                    <div class="draggable-rotate" vOn:mousedown_stop_prevent={this.handleRotate} >
+                        <svg-icon icon-class="rotate" size="16" />
+                    </div>}
+                {
+                    this.active &&
                     this.points.map(point =>
                         <i
                             class="stretch-point"

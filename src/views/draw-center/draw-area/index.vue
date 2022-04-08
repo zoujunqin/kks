@@ -2,7 +2,8 @@
 import Ruler from './Ruler/index'
 import Contextmenu from './Contextmenu/index'
 import Draggable from './Draggable/index'
-import { state, mutations } from '../observer'
+import MarkLine from './MarkLine/index'
+import { state, mutations } from '../bus/store'
 import { noop } from '@/utils'
 import { calcPosAtScale, calcWidgetPosition } from '@/utils/widgets'
 import { limitPosition } from '@/utils/position'
@@ -169,8 +170,13 @@ export default {
                     height: 200,
                     rotate: 0
                 },
+                active: false,
                 ...state.widgetOption
             })
+        },
+
+        handleContentMousedown() {
+            this.widgets.forEach(w => w.active = false)
         },
 
         // 拖拽组件右键菜单
@@ -184,6 +190,8 @@ export default {
         },
         draggableMousedown(widget) {
             mutations.setActivatedWidget(widget)
+            this.widgets.forEach(w => w.active = false)
+            widget.active = true
         },
         handleDraggableTransform(index, style) {
             const orStyle = this.widgets[index].style
@@ -225,6 +233,7 @@ export default {
         return (
             <div class="canvas-area" vOn:contextmenu_prevent={noop}>
                 <Ruler
+                    id='ruler'
                     cid="canvas-content"
                     opera={this.rulerLineOpera}
                     thick={this.rulerThick}
@@ -232,20 +241,21 @@ export default {
                     height={this.rootHeight}
                     contentWidth={this.contentWidth}
                     contentHeight={this.contentHeight}
-                    onTransform={this.handleTransform}
-                    onLineUpdate={this.handleRulerLineUpdate}
+                    vOn:transform={this.handleTransform}
+                    vOn:lineUpdate={this.handleRulerLineUpdate}
                 >
                     <div
                         class="content-wrap"
-                        onMouseenter={
-                            this.isWidgetSelected ? this.handleContentMouseenter : noop
-                        }
-                        onMouseup={this.isWidgetSelected ? this.handleContentMouseup : noop}
-                        onMouseleave={
-                            state.isInCanvasArea ? this.handleContentMouseleave : noop
-                        }
+                        // vOn:mouseenter={this.isWidgetSelected ? this.handleContentMouseenter : noop}
+                        // vOn:mouseup={this.isWidgetSelected ? this.handleContentMouseup : noop}
+                        // vOn:mouseleave={state.isInCanvasArea ? this.handleContentMouseleave : noop}
+                        vOn:mousedown_capture={this.handleContentMousedown}
                     >
+
                         <div id="canvas-content" class="content" style={this.contentStyles}>
+
+                            <MarkLine />
+
                             {this.widgets.map((widget, index) => (
                                 <Draggable
                                     style={{
@@ -256,6 +266,7 @@ export default {
                                         transform: `rotate(${widget.style.rotate}deg)`,
                                         'transform-origin': widget.style['transform-origin']
                                     }}
+                                    active={widget.active}
                                     styles={widget.style}
                                     gap={this.draggableGap}
                                     scale={this.scale}
@@ -268,7 +279,7 @@ export default {
                                     adsorpTops={this.adsorpTops}
                                     vOn:contextmenu_native={this.handleDraggableContextmenu}
                                     vOn:transform={this.handleDraggableTransform.bind(this, index)}
-                                    vOn:mousedown={this.draggableMousedown.bind(this, widget)}
+                                    vOn:mousedown={this.draggableMousedown.bind(this, widget, index)}
                                 >
                                     <widget.component></widget.component>
                                 </Draggable>
@@ -281,16 +292,9 @@ export default {
                 </Ruler>
 
                 {/* 右键菜单 */}
-                <Contextmenu
-                    vModel={this.showContextmenu}
-                    style={this.contextmenuStyles}
-                >
-                    <div class="copy" onClick={this.handleCopy}>
-                        复制
-                    </div>
-                    <div class="paste" onClick={this.handlePaste}>
-                        黏贴
-                    </div>
+                <Contextmenu vModel={this.showContextmenu} style={this.contextmenuStyles} >
+                    <div class="copy" onClick={this.handleCopy}>复制</div>
+                    <div class="paste" onClick={this.handlePaste}>黏贴</div>
                 </Contextmenu>
             </div>
         )

@@ -1,6 +1,5 @@
 import { flatArray } from './array'
 import { adsorbent } from './adsorbent'
-import { cos, sin } from './translate'
 
 const styleRegExp = /^style\./
 const propsRegExp = /^props\./
@@ -8,21 +7,21 @@ const propsRegExp = /^props\./
 
 // 配置项转 style props echartOption 等等
 export function setupTransform(setup, field) {
-  const setupStyle = {}
-  const setupDataSource = {}
-  const stylesAndProps = flatArray(
-    setup.setup.concat(setup.setupPosition),
-    field
-  )
-  for (const item of stylesAndProps) {
-    if (styleRegExp.test(item.mapping)) {
-      setupStyle[item.mapping.replace(styleRegExp, '')] = item.value + item.unit
-    } else if (propsRegExp.test(item.mapping)) {
-      setupDataSource[item.mapping.replace(propsRegExp, '')] =
-        item.value + item.unit
+    const setupStyle = {}
+    const setupDataSource = {}
+    const stylesAndProps = flatArray(
+        setup.setup.concat(setup.setupPosition),
+        field
+    )
+    for (const item of stylesAndProps) {
+        if (styleRegExp.test(item.mapping)) {
+            setupStyle[item.mapping.replace(styleRegExp, '')] = item.value + item.unit
+        } else if (propsRegExp.test(item.mapping)) {
+            setupDataSource[item.mapping.replace(propsRegExp, '')] =
+                item.value + item.unit
+        }
     }
-  }
-  return { setupStyle, setupDataSource }
+    return { setupStyle, setupDataSource }
 }
 
 /**
@@ -45,54 +44,30 @@ export function setupTransform(setup, field) {
  *                  }
  */
 export function calcWidgetPosition({
-  left,
-  top,
-  width,
-  height,
-  parentWidth,
-  parentHeight,
-  gap,
-  addis,
-  adsorpLefts,
-  adsorpTops
+    left,
+    top,
+    width,
+    height,
+    parentWidth,
+    parentHeight,
+    gap,
+    addis,
+    adsorpLefts,
+    adsorpTops
 }) {
-  const ll = gap - width
-  const rl = parentWidth - gap
-  const tl = gap - height
-  const bl = parentHeight - gap
-  left = adsorbent(left <= ll ? ll : left >= rl ? rl : left, addis, adsorpLefts)
+    const ll = gap - width
+    const rl = parentWidth - gap
+    const tl = gap - height
+    const bl = parentHeight - gap
+    left = adsorbent(left <= ll ? ll : left >= rl ? rl : left, addis, adsorpLefts)
 
-  top = adsorbent(top <= tl ? tl : top >= bl ? bl : top, addis, adsorpTops)
+    top = adsorbent(top <= tl ? tl : top >= bl ? bl : top, addis, adsorpTops)
 
-  return { left, top }
+    return { left, top }
 }
 
 export function calcPosAtScale(pos, scale, fixed = 1) {
-  return +(pos / scale).toFixed(fixed)
+    return +(pos / scale).toFixed(fixed)
 }
 
-// 获取旋转后的样式
-export function getRotatedStyle(style) {
-  style = { ...style }
-  if (style.rotate != 0) {
-    const newWidth =
-      style.width * cos(style.rotate) + style.height * sin(style.rotate)
-    const diffX = (style.width - newWidth) / 2 // 旋转后范围变小是正值，变大是负值
-    style.left += diffX
-    style.right = style.left + newWidth
 
-    const newHeight =
-      style.height * cos(style.rotate) + style.width * sin(style.rotate)
-    const diffY = (newHeight - style.height) / 2 // 始终是正
-    style.top -= diffY
-    style.bottom = style.top + newHeight
-
-    style.width = newWidth
-    style.height = newHeight
-  } else {
-    style.bottom = style.top + style.height
-    style.right = style.left + style.width
-  }
-
-  return style
-}
