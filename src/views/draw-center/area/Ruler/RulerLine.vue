@@ -1,6 +1,7 @@
 <script>
 import { noop } from '@/utils'
 import { setBodyCursor } from './utils'
+import { calcOnScale, calcOnReverseScale } from '@/utils/scale'
 export default {
     props: {
         id: Number,
@@ -38,8 +39,8 @@ export default {
 
         // 参考线样式
         lineStyle() {
-            const startValue = this.start / this.scale
-            const distance = (this.value - startValue) * this.scale + this.thick
+            const startValue = this.calcOnReverseScale(this.start)
+            const distance = this.calcOnScale(this.value - startValue) + this.thick
 
             const style = {
                 background: this.lineColor,
@@ -103,8 +104,26 @@ export default {
     },
 
     methods: {
-        createMouseEvent() {
-            document.onmousemove = (e) => {
+
+        calcOnScale(distance) { return calcOnScale(distance, this.scale) },
+
+        calcOnReverseScale(distance) { return calcOnReverseScale(distance, this.scale) },
+
+        handleMousedown(e) {
+            const { left: rulerRectLeft, top: rulerRectTop } = this.rulerRectInfo()
+
+            setBodyCursor(this.vertical ? 'col-resize' : 'row-resize')
+
+            let line = this.line
+            if (this.vertical) {
+                line.start = this.startX
+                line.left = e.clientX - rulerRectLeft
+            } else {
+                line.start = this.startY
+                line.top = e.clientY - rulerRectTop
+            }
+
+            const move = (e) => {
                 e.preventDefault(); e.stopPropagation()
 
                 const { left: rulerRectLeft, top: rulerRectTop } = this.rulerRectInfo()
@@ -121,27 +140,17 @@ export default {
                 this.$emit('move', (this.handledLine = line))
             }
 
-            document.onmouseup = () => {
-                document.onmouseup = null
-                document.onmousemove = null
+            const up = () => {
                 this.handledLine && this.$emit('up', this.handledLine, this.id)
                 setBodyCursor('auto')
-            }
-        },
-        handleMousedown(e) {
-            const { left: rulerRectLeft, top: rulerRectTop } = this.rulerRectInfo()
 
-            setBodyCursor(this.vertical ? 'col-resize' : 'row-resize')
-            this.createMouseEvent()
-
-            let line = this.line
-            if (this.vertical) {
-                line.start = this.startX
-                line.left = e.clientX - rulerRectLeft
-            } else {
-                line.start = this.startY
-                line.top = e.clientY - rulerRectTop
+                window.removeEventListener('mousemove', move)
+                window.removeEventListener('mouseup', up)
             }
+
+            window.addEventListener('mousemove', move)
+            window.addEventListener('mouseup', up)
+
             this.$emit('down', (this.handledLine = line))
         }
     },

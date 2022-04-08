@@ -79,8 +79,10 @@ export default {
             }
         },
 
-        createMouseEvent() {
-            document.onmousemove = (e) => {
+        handleMousedown() {
+            setBodyCursor(this.vertical ? 'col-resize' : 'row-resize')
+
+            const move = (e) => {
                 e.preventDefault(); e.stopPropagation()
 
                 const { left: rulerRectLeft, top: rulerRectTop } = this.rulerRectInfo()
@@ -94,7 +96,8 @@ export default {
                         start: this.startX
                     })
 
-                !this.vertical &&
+                !this.vertical
+                    &&
                     (this.line = {
                         canAdded: e.clientY - rulerRectTop >= this.thick,
                         top: e.clientY - rulerRectTop,
@@ -106,18 +109,18 @@ export default {
                 this.$emit('move', this.line)
             }
 
-            document.onmouseup = () => {
-                document.onmouseup = null
-                document.onmousemove = null
+            const up = () => {
+                setBodyCursor('auto')
 
                 this.line && this.$emit('up', this.line)
                 this.line = null
-                setBodyCursor('auto')
+
+                window.removeEventListener('mousemove', move)
+                window.removeEventListener('mouseup', up)
             }
-        },
-        handleMousedown() {
-            setBodyCursor(this.vertical ? 'col-resize' : 'row-resize')
-            this.createMouseEvent()
+
+            window.addEventListener('mousemove', move)
+            window.addEventListener('mouseup', up)
 
             this.$emit('down')
         }

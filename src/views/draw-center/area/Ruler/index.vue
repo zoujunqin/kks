@@ -29,6 +29,8 @@ import RulerLine from './RulerLine'
  * @property {String} cornerBackground 标尺左上角交叉背景色
  */
 
+import { calcOnScale, calcOnReverseScale } from '@/utils/scale'
+
 function operaMap(opera) {
     return opera ? 'unset' : 'none'
 }
@@ -139,7 +141,7 @@ export default {
 
     provide() {
         return {
-            rulerRectInfo: () => this.rulerRectInfo
+            rulerRectInfo: () => this.$refs.ruler.getBoundingClientRect()
         }
     },
 
@@ -221,22 +223,19 @@ export default {
 
     methods: {
 
-        getRulerRectInfo() {
-            this.rulerRectInfo = this.$refs.ruler.getBoundingClientRect()
-        },
+        calcOnScale(distance) { return calcOnScale(distance, this.scale) },
+
+        calcOnReverseScale(distance) { return calcOnReverseScale(distance, this.scale) },
 
         // mouted 钩子执行
         setScroll() {
             const rulerContent = this.$refs.rc
             // 滚动使内容左上角跟容器左上角对齐
-            rulerContent.scrollTop =
-                (this.slotHeight - this.contentHeight) / 2 + this.startY
-            rulerContent.scrollLeft =
-                (this.slotWidth - this.contentWidth) / 2 + this.startX
+            rulerContent.scrollTop = (this.slotHeight - this.contentHeight) / 2 + this.startY
+            rulerContent.scrollLeft = (this.slotWidth - this.contentWidth) / 2 + this.startX
 
             // if this.slotWidth equals this.contentWidth and this.slotHeight equals this.contentHeight, call handlerScroll manually
-            if (rulerContent.scrollTop === 0 && rulerContent.scrollLeft === 0)
-                this.handleScroll()
+            if (rulerContent.scrollTop === 0 && rulerContent.scrollLeft === 0) this.handleScroll()
         },
 
         handleCornerClick() {
@@ -249,10 +248,10 @@ export default {
             const scrollTop = rc.scrollTop
             const scrollLeft = rc.scrollLeft
 
-            const gapLR = (this.slotWidth - this.contentWidth * this.scale) / 2
+            const gapLR = (this.slotWidth - this.calcOnScale(this.contentWidth)) / 2
             this.sx = scrollLeft - gapLR
 
-            const gapTB = (this.slotHeight - this.contentHeight * this.scale) / 2
+            const gapTB = (this.slotHeight - this.calcOnScale(this.contentHeight)) / 2
             this.sy = scrollTop - gapTB
 
             this.$emit('transform', {
@@ -304,9 +303,8 @@ export default {
         // 根据线一些信息计算刻度值
         getValue(line) {
             const { left, top, vertical, start } = line
-            const startValue = start / this.scale
-            const value =
-                ((vertical ? left : top) - this.thick) / this.scale + startValue
+            const startValue = this.calcOnReverseScale(start)
+            const value = this.calcOnReverseScale((vertical ? left : top) - this.thick) + startValue
             return Math.round((value * 10).toFixed(1)) / 10
         },
 
@@ -328,10 +326,7 @@ export default {
     },
 
     mounted() {
-        this.$nextTick(() => {
-            this.setScroll()
-            this.getRulerRectInfo()
-        })
+        this.$nextTick(this.setScroll)
 
         this.contentEl = document.querySelector('#' + this.cid)
 
