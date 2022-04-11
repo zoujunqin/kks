@@ -18,33 +18,33 @@ import { calcOnScale, calcOnReverseScale } from './scale'
  *                  }
  */
 export function limitPosition({
-  left,
-  top,
-  limit,
-  gl = 0,
-  gr = 0,
-  gt = 0,
-  gb = 0,
-  pw,
-  ph,
-  width,
-  height,
-  scale
+    left,
+    top,
+    limit,
+    gl = 0,
+    gr = 0,
+    gt = 0,
+    gb = 0,
+    pw,
+    ph,
+    width,
+    height,
+    scale
 }) {
-  left = calcOnScale(left, scale)
-  top = calcOnScale(top, scale)
-  width = calcOnScale(width, scale)
-  height = calcOnScale(height, scale)
-  pw = calcOnScale(pw, scale)
-  ph = calcOnScale(ph, scale)
-  const ll = limit - width - gl
-  const rl = pw + gr - limit
-  const tl = limit - height - gt
-  const bl = ph + gb - limit
-  return {
-    left: calcOnReverseScale(left <= ll ? ll : left >= rl ? rl : left, scale),
-    top: calcOnReverseScale(top <= tl ? tl : top >= bl ? bl : top, scale)
-  }
+    left = calcOnScale(left, scale)
+    top = calcOnScale(top, scale)
+    width = calcOnScale(width, scale)
+    height = calcOnScale(height, scale)
+    pw = calcOnScale(pw, scale)
+    ph = calcOnScale(ph, scale)
+    const ll = limit - width - gl
+    const rl = pw + gr - limit
+    const tl = limit - height - gt
+    const bl = ph + gb - limit
+    return {
+        left: calcOnReverseScale(left <= ll ? ll : left >= rl ? rl : left, scale),
+        top: calcOnReverseScale(top <= tl ? tl : top >= bl ? bl : top, scale)
+    }
 }
 
 /**
@@ -55,12 +55,13 @@ export function limitPosition({
  * @returns
  */
 export function adsorbent(cur, ad, pos) {
-  for (const po of pos) {
-    const diff = cur - ad
-    if (diff <= po && diff >= po - ad) {
-      cur = po
-      break
+    for (const po of pos) {
+        const diff = cur - ad
+        if (diff <= po && diff >= po - ad) {
+            cur = po
+            break
+        }
     }
-  }
-  return cur
+    return cur
 }
+

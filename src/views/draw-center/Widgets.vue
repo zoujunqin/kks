@@ -27,7 +27,6 @@ export default {
         fetchOnlineWidgets() { },
 
         handleMousedown(option, e) {
-            console.log('downs')
             const html = e.target.outerHTML
             eventBus.$emit(eventName.dragWidget, option, html)
         }

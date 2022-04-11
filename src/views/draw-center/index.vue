@@ -8,6 +8,7 @@ import Widgets from '@/views/draw-center/Widgets'
 import { option } from '@/components/Widgets/Line/setup'
 
 import { eventBus, eventName } from './bus/event'
+import { mutations } from './bus/store'
 import { style2WithUnit } from '@/utils/style'
 
 export default {
@@ -15,6 +16,9 @@ export default {
         return {
             option,
             styleForPlace: {},
+            previewStyleForPlace: {
+                background: 'gray'
+            },
             innerHTMLForPlace: null,
         }
     },
@@ -23,14 +27,26 @@ export default {
 
         dragWidget(option, html) {
 
-            this.innerHTMLForPlace = html
-
+            const { width, height } = { width: 200, height: 200 }
             const move = e => {
-                this.styleForPlace = { left: e.clientX, top: e.clientY, }
-                console.log(style2WithUnit(this.styleForPlace))
+                this.innerHTMLForPlace = html
+                this.styleForPlace = { left: e.clientX, top: e.clientY, opacity: 1 }
+
+                if (e.path.includes(this.$refs.DrawArea.$el)) {
+                    Object.assign(this.styleForPlace, this.previewStyleForPlace)
+                    this.styleForPlace = { left: e.clientX, top: e.clientY, opacity: 1, width, height, rotate: 0 }
+                    this.innerHTMLForPlace = null
+                }
             }
 
             const up = () => {
+
+                const curWidget = { ...option, style: this.styleForPlace, active: false }
+                mutations.setCurWidget(curWidget)
+                eventBus.$emit(eventName.addWidgetToCanvas)
+
+                this.styleForPlace = { opacity: 0 }
+
                 window.removeEventListener('mousemove', move)
                 window.removeEventListener('mouseup', up)
             }

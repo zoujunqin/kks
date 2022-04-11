@@ -5,5 +5,6 @@ export const eventBus = new Vue()
 const namePrefix = 'draw-center' + new Date().getTime()
 
 export const eventName = {
-    'dragWidget': namePrefix + 'dragWidget'
+    dragWidget: namePrefix + 'dragWidget',
+    addWidgetToCanvas: namePrefix + 'addWidgetToCanvas'
 }

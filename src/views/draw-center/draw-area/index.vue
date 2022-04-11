@@ -1,19 +1,29 @@
 <script>
-import Ruler from './Ruler/index'
-import Contextmenu from './Contextmenu/index'
-import Draggable from './Draggable/index'
-import MarkLine from './MarkLine/index'
-import { state, mutations } from '../bus/store'
-import { noop } from '@/utils'
-import { calcPosAtScale, calcWidgetPosition } from '@/utils/widgets'
-import { limitPosition } from '@/utils/position'
-
 import ClipboardJs from 'clipboard'
 
+import Ruler from './Ruler/index'
+import Draggable from './Draggable/index'
+import MarkLine from './MarkLine/index'
+
+import { noop } from '@/utils'
+import { limitPosition } from '@/utils/position'
+
+import { state, mutations } from '../bus/store'
+import { eventBus, eventName } from '../bus/event'
+
 export default {
+
+    // provide() {
+    //     return {
+    //         rulerRectInfo: () => this.rulerRectInfo
+    //     }
+    // },
+
     data() {
         return {
-            rulerTick: 20,
+            // ruler
+            rulerRectInfo: {},
+            rulerThick: 20,
             rootWidth: 0,
             rootHeight: 0,
 
@@ -31,8 +41,6 @@ export default {
             adsorpTops: [], // 上吸附位置，根据标尺参考线生成
 
             widgets: [], // 存放添加到拖拽区域的部件
-
-            seizeSeatStyles: {},
 
             // 右键菜单
             showContextmenu: false,
@@ -110,70 +118,6 @@ export default {
                 } else this.adsorpTops.push(line.value)
             }
         },
-        handleContentMouseenter() {
-            this.rulerLineOpera = false
-            mutations.setInCanvasArea(true)
-
-            const move = (e) => {
-                if (!state.isInCanvasArea) return
-
-                const { clientX, clientY } = e
-                const left = calcPosAtScale(
-                    clientX - (220 - this.rulerStartx),
-                    this.scale
-                )
-                const top = calcPosAtScale(
-                    clientY - (80 - this.rulerStarty),
-                    this.scale
-                )
-
-                const { left: newLeft, top: newTop } = calcWidgetPosition({
-                    top,
-                    left,
-                    width: 300,
-                    height: 200,
-                    parentWidth: this.contentWidth,
-                    parentHeight: this.contentHeight,
-                    gap: this.draggableGap,
-                    addis: this.adsorptionDistance,
-                    adsorpLefts: this.adsorpLefts,
-                    adsorpTops: this.adsorpTops
-                })
-
-                this.seizeSeatStyles = {
-                    left: newLeft + 'px',
-                    top: newTop + 'px',
-                    opacity: 1
-                }
-            }
-
-            const up = () => {
-                this.rulerLineOpera = true
-                window.removeEventListener('mousemove', move)
-                window.removeEventListener('mouseup', up)
-            }
-
-            window.addEventListener('mousemove', move)
-            window.addEventListener('mouseup', up)
-        },
-        handleContentMouseleave() {
-            mutations.setInCanvasArea(false)
-            this.seizeSeatStyles.opacity = 0
-        },
-        handleContentMouseup() {
-            this.seizeSeatStyles.opacity = 0
-            this.widgets.push({
-                style: {
-                    left: parseFloat(this.seizeSeatStyles.left),
-                    top: parseFloat(this.seizeSeatStyles.top),
-                    width: 200,
-                    height: 200,
-                    rotate: 0
-                },
-                active: false,
-                ...state.widgetOption
-            })
-        },
 
         handleContentMousedown() {
             this.widgets.forEach(w => w.active = false)
@@ -215,17 +159,32 @@ export default {
             }
         },
 
+        getRulerRectInfo() {
+            this.rulerRectInfo = document.querySelector('#ruler').getBoundingClientRect()
+        },
+
+        addWidgetToCanvas() {
+            const rulerRectInfo = this.rulerRectInfo
+            const { style: { left, top } } = state.curWidget
+            state.curWidget.style.left = left + this.rulerStartx - (rulerRectInfo.left + this.rulerThick)
+            state.curWidget.style.top = top + this.rulerStarty - (rulerRectInfo.top + this.rulerThick)
+            this.widgets.push(state.curWidget)
+        },
+
         resize() {
             this.getHeightWidth()
         }
     },
 
     mounted() {
+        eventBus.$on(eventName.addWidgetToCanvas, this.addWidgetToCanvas)
         this.resize()
+        this.getRulerRectInfo()
         this.createClipboard()
     },
 
     beforeDestroy() {
+        eventBus.$off(eventName.addWidgetToCanvas)
         this.clipboard.destroy()
     },
 
@@ -243,20 +202,16 @@ export default {
                     contentHeight={this.contentHeight}
                     vOn:transform={this.handleTransform}
                     vOn:lineUpdate={this.handleRulerLineUpdate}
+                    vOn:mousedown_capture={this.handleContentMousedown}
                 >
-                    <div
-                        class="content-wrap"
-                        // vOn:mouseenter={this.isWidgetSelected ? this.handleContentMouseenter : noop}
-                        // vOn:mouseup={this.isWidgetSelected ? this.handleContentMouseup : noop}
-                        // vOn:mouseleave={state.isInCanvasArea ? this.handleContentMouseleave : noop}
-                        vOn:mousedown_capture={this.handleContentMousedown}
-                    >
 
-                        <div id="canvas-content" class="content" style={this.contentStyles}>
 
-                            <MarkLine />
+                    <div id="canvas-content" class="content" style={this.contentStyles}>
 
-                            {this.widgets.map((widget, index) => (
+                        <MarkLine />
+
+                        {
+                            this.widgets.map((widget, index) => (
                                 <Draggable
                                     style={{
                                         left: widget.style.left + 'px',
@@ -283,19 +238,14 @@ export default {
                                 >
                                     <widget.component></widget.component>
                                 </Draggable>
-                            ))}
+                            ))
+                        }
 
-                            {/* 占位 */}
-                            <div class="seize-seat" style={this.seizeSeatStyles}></div>
-                        </div>
                     </div>
+
+
                 </Ruler>
 
-                {/* 右键菜单 */}
-                <Contextmenu vModel={this.showContextmenu} style={this.contextmenuStyles} >
-                    <div class="copy" onClick={this.handleCopy}>复制</div>
-                    <div class="paste" onClick={this.handlePaste}>黏贴</div>
-                </Contextmenu>
             </div>
         )
     }
@@ -306,30 +256,29 @@ export default {
 .canvas-area {
     position: relative;
     width: calc(100vw - 600px);
-    .content-wrap {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-        .content {
-            background-color: #a4d3e1;
-            position: absolute;
-            left: 0;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            margin: auto;
-            .seize-seat {
-                opacity: 0;
-                position: absolute;
-                width: 300px;
-                height: 200px;
-                pointer-events: none;
-                background: #e3e6e8;
-                box-shadow: 0px 0px 4px -2px grey;
-                transition: opacity 0.5s ease;
-            }
-        }
+    // .content-wrap {
+    //     width: 100%;
+    //     height: 100%;
+    //     position: relative;
+    //     overflow: hidden;
+    //     .content {
+    //         background-color: #a4d3e1;
+    //         position: absolute;
+    //         left: 0;
+    //         right: 0;
+    //         top: 0;
+    //         bottom: 0;
+    //         margin: auto;
+    //     }
+    // }
+    .content {
+        background-color: #a4d3e1;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        margin: auto;
     }
 }
 </style>

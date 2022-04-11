@@ -168,10 +168,10 @@ export default {
 
     computed: {
         slotWidth() {
-            return this.contentWidth * 1.5
+            return this.contentWidth * 2
         },
         slotHeight() {
-            return this.contentHeight * 1.5
+            return this.contentHeight * 2
         },
         // 水平刻度尺宽度
         tickWidth() {
@@ -482,6 +482,9 @@ export default {
         width: 100%;
         height: 100%;
         overflow: scroll;
+        .slot-wrap {
+            position: relative;
+        }
     }
 }
 </style>

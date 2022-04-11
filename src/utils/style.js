@@ -33,9 +33,11 @@ export function getRotatedStyle(style) {
  * 将 style 中需要转化的值带上单位 , 暂时只转化四个属性
  * @param {Object} style 
  */
+const attrs = ['left', 'top', 'width', 'height']
 export function style2WithUnit(style) {
+    style = { ...style }
     for (const key in style) {
-        typeof style[key] && (style[key] += 'px')
+        (typeof style[key] && attrs.includes(key)) && (style[key] += 'px')
     }
     return style
 }
