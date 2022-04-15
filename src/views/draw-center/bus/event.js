@@ -6,5 +6,5 @@ const namePrefix = 'draw-center' + new Date().getTime()
 
 export const eventName = {
     dragWidget: namePrefix + 'dragWidget',
-    addWidgetToCanvas: namePrefix + 'addWidgetToCanvas'
+    addWidget: namePrefix + 'addWidget'
 }

@@ -1,8 +1,8 @@
 <script>
 export default {
-  render() {
-    return <div></div>
-  }
+    render() {
+        return <div></div>
+    }
 }
 </script>
 

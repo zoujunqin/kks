@@ -30,14 +30,35 @@ export function getRotatedStyle(style) {
 }
 
 /**
- * 将 style 中需要转化的值带上单位 , 暂时只转化四个属性
+ * 将 style 中需要转化的值带上单位 
  * @param {Object} style 
  */
-const attrs = ['left', 'top', 'width', 'height']
-export function style2WithUnit(style) {
+const toCssAttrs = ['top', 'left', 'right', 'bottom', 'width', 'height', 'margin', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom']
+export function styleToCss(style, attrs = toCssAttrs) {
+
     style = { ...style }
-    for (const key in style) {
-        (typeof style[key] && attrs.includes(key)) && (style[key] += 'px')
+
+    for (const item of attrs) {
+        style[item] && (style[item] = style[item] + 'px')
     }
+
+    style.rotate && (style.transform = `rotate(${style.rotate}deg)`)
+
     return style
 }
+
+/**
+ * 获取形状位置相关的样式
+ * @param {Object} style 
+ */
+const shapeStyleAttrs = ['left', 'top', 'width', 'height', 'rotate', 'rotatedLeft', 'rotatedRight', 'rotatedTop', 'rotatedBottom', 'rotatedWidth', 'rotatedHeight']
+export function getShapeStyle(style, attrs = shapeStyleAttrs) {
+
+    const newStyle = {}
+    for (const item of attrs) {
+        style[item] && (newStyle[item] = style[item])
+    }
+
+    return newStyle
+}
+

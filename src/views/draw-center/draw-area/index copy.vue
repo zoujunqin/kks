@@ -105,8 +105,6 @@ export default {
             const length = widget.groupIds.length
             const index = widget.groupIds.findIndex(id => id === state.curGroupId)
 
-            console.log(index)
-
             // 按住键盘 metaKey + 鼠标单击
             if (e.metaKey) {
 
@@ -121,7 +119,8 @@ export default {
                     // 获取当前 widget 最大的组的所有 widget, 没有组就是自身
                     const curGroup = length === 0 ? [widget] : this.allWidgets.map(item => item.groupIds.includes(widget.groupIds[length - 1]))
                     mutations.setWidgets(curGroup, true)
-                    mutations.setFlatWidgets([...state.flatWidgets, ...curGroup])
+                } else {
+
                 }
 
 
@@ -251,10 +250,6 @@ export default {
                                             <widget.component />
                                         </div>
                                 )
-                            }
-
-                            {
-                                this.nodes
                             }
 
                         </div>

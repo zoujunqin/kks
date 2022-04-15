@@ -1,45 +1,37 @@
 <script>
 /**
  * @property {Number} styles
- * @property {Number} rulerStartx
- * @property {Number} rulerStarty
+ * @property {Number} rulerStartX
+ * @property {Number} rulerStartY
  * @property {Number} scale 缩放值
  * @property {Number} limit 当前组件移动时限制 gap px 在父级容器中
- * @property {Number} parentWidth 当前组件所在的父级容器的宽度
- * @property {Number} parentHeight 当前组件所在的父级容器的高度
  * @property {Number} stretchPointThick 拉伸点的宽高
  * @property {String} stretchPointBackground 拉伸点背景色
  * @property {String} guardLineBackground 辅助线背景
  * @property {String} guardIndicatorColor 辅助线文字颜色
  * @property {Number} guardIndicatorFontSize 辅助线文字大小
- * @property {Array}  adsorpLefts 需要左吸附的位置
- * @property {Array}  adsorpTops 需要上吸附的位置
- * @property {Number} adsorptionDistance 距离吸附位置多少距离会被吸附
  */
 
 const props = {
     scale: Number,
-    parentWidth: Number,
-    parentHeight: Number,
     styles: { type: Object, default: () => { } },
     active: { type: Boolean, default: true },
     rotate: { type: Number, default: 0 },
-    rulerStartx: { type: Number, default: 0 },
-    rulerStarty: { type: Number, default: 0 },
+    rulerStartX: { type: Number, default: 0 },
+    rulerStartY: { type: Number, default: 0 },
     limit: { type: Number, default: 5 },
     stretchPointThick: { type: Number, default: 6 },
     stretchPointBackground: { type: String, default: '#09f' },
     guardLineBackground: { type: String, default: '#09f' },
     guardIndicatorColor: { type: String, default: '#09f' },
     guardIndicatorFontSize: { type: Number, default: 12 },
-    adsorpLefts: { type: Array, default: () => [] },
-    adsorpTops: { type: Array, default: () => [] },
-    adsorptionDistance: { type: Number, default: 5 }
 }
 
 import { calcOnReverseScale, calcOnScale } from '@/utils/scale'
 import calculateComponentPositonAndSize from '@/utils/calcPositionAndSize'
-import { mod360 } from '@/utils/translate'
+import { mod360, getRotatedPointCoordinate } from '@/utils/translate'
+import { state } from '../bus/store'
+import { getRotatedStyle } from '@/utils/style'
 
 export default {
     props,
@@ -48,6 +40,8 @@ export default {
             // handleDownOnRoot 方法中存储的事件
             event: null,
             startPoint: {},
+            shapeStyle: {},
+            curWidgetsStyle: [],
 
             points: ['lt', 'tm', 'rt', 'rc', 'rb', 'bm', 'lb', 'lc'],
             initialAngle: { // 每个点对应的初始角度
@@ -71,6 +65,7 @@ export default {
                 { start: 293, end: 338, cursor: 'w' },
             ],
             cursors: {},
+
         }
     },
 
@@ -78,15 +73,19 @@ export default {
         // 画布信息
         canvasRectInfo() {
             return {
-                left: 220 - this.rulerStartx,
-                top: 80 - this.rulerStarty
+                left: 220 - this.rulerStartX,
+                top: 80 - this.rulerStartY
             }
+        },
+
+        flatWidgets() {
+            return state.flatWidgets
         }
     },
 
     watch: {
         canvasRectInfo() {
-            this.event && this.handleStyleByScroll(this.event, true)
+            this.event && this.handleStyleByScroll(this.event)
         }
     },
 
@@ -164,30 +163,35 @@ export default {
 
         // 缩放样式
         scaleStyle(style) {
-            const { left, top, width, height } = style
-            return {
-                ...style,
-                top: this.calcOnScale(top),
-                left: this.calcOnScale(left),
-                width: this.calcOnScale(width),
-                height: this.calcOnScale(height)
+            const scaleAttrs = ['top', 'left', 'width', 'height', 'rotatedTop', 'rotatedLeft', 'rotatedWidth', 'rotatedHeight']
+            style = { ...style }
+
+            for (const item of scaleAttrs) {
+                style[item] && (style[item] = this.calcOnScale(style[item]))
             }
+            return style
         },
 
         // 恢复样式
         backStyle(style) {
-            const { left, top, width, height } = style
-            return {
-                ...style,
-                top: this.calcOnReverseScale(top),
-                left: this.calcOnReverseScale(left),
-                width: this.calcOnReverseScale(width),
-                height: this.calcOnReverseScale(height)
+            const scaleAttrs = ['top', 'left', 'width', 'height', 'rotatedTop', 'rotatedLeft', 'rotatedWidth', 'rotatedHeight']
+            style = { ...style }
+
+            for (const item of scaleAttrs) {
+                style[item] && (style[item] = this.calcOnReverseScale(style[item]))
             }
+            return style
+        },
+
+        saveShapeStyleAndCurWidgetsStyle() {
+            this.shapeStyle = this.styles
+            this.curWidgetsStyle = this.flatWidgets.map(w => ({ ...w.style }))
         },
 
         handleDownOnPoint(point, e) {
             e.stopPropagation(); e.preventDefault()
+
+            this.saveShapeStyleAndCurWidgetsStyle()
 
             const needLockProportion = false
 
@@ -219,7 +223,8 @@ export default {
                     symmetricPoint,
                 })
 
-                this.$emit('transform', this.backStyle(style))
+                // this.$emit('transform', this.backStyle(style))
+                this.changeShapeStyle(style)
 
             }
 
@@ -241,12 +246,14 @@ export default {
             const left = originLeft - (prevStartX - startX)
             const top = originTop - (prevStartY - startY)
 
-            this.$emit('transform', { left: this.calcOnReverseScale(left), top: this.calcOnReverseScale(top) })
+            this.changeShapeStyle({ left, top })
             this.startPoint = { x: startX, y: startY }
         },
 
         handleDownOnRoot(e) {
             this.event = e
+            this.saveShapeStyleAndCurWidgetsStyle()
+
             const { left: originLeft, top: originTop } = this.scaleStyle(this.styles)
 
             const startX = e.clientX - this.canvasRectInfo.left
@@ -261,7 +268,7 @@ export default {
                 const left = curX - startX + originLeft
                 const top = curY - startY + originTop
 
-                this.$emit('transform', { left: this.calcOnReverseScale(left), top: this.calcOnReverseScale(top) })
+                this.changeShapeStyle({ left, top })
             }
 
             const up = () => {
@@ -272,14 +279,13 @@ export default {
 
             window.addEventListener('mousemove', move)
             window.addEventListener('mouseup', up)
-
-            this.$emit('mousedown')
         },
 
         // 旋转
         handleRotate(e) {
-            e.preventDefault()
-            e.stopPropagation()
+            e.preventDefault(); e.stopPropagation()
+            this.saveShapeStyleAndCurWidgetsStyle()
+
             // 初始坐标和初始角度
             const startY = e.clientY
             const startX = e.clientX
@@ -301,7 +307,9 @@ export default {
                 const rotateDegreeAfter =
                     Math.atan2(curY - centerY, curX - centerX) / (Math.PI / 180)
 
-                this.$emit('transform', { rotate: startRotate + Math.ceil(rotateDegreeAfter - rotateDegreeBefore) })
+
+
+                this.changeShapeStyle({ rotate: startRotate + Math.ceil(rotateDegreeAfter - rotateDegreeBefore) })
             }
 
             const up = () => {
@@ -312,19 +320,66 @@ export default {
 
             document.addEventListener('mousemove', move)
             document.addEventListener('mouseup', up)
+        },
+
+        changeShapeStyle(style) {
+            const { left, top, width, height, rotate } = style
+            const { left: oldLeft, top: oldTop, width: oldWidth, height: oldHeight } = this.scaleStyle(this.shapeStyle)
+            const diffLeft = left !== void 0 ? left - oldLeft : 0
+            const diffTop = top !== void 0 ? top - oldTop : 0
+            const diffWidth = width !== void 0 ? width - oldWidth : 0
+            const diffHeight = height !== void 0 ? height - oldHeight : 0
+
+            this.flatWidgets.forEach((w, index) => {
+
+                const { left: wLeft, top: wTop, width: wWidth, height: wHeight, rotate: wRotate } = this.scaleStyle(this.curWidgetsStyle[index])
+                const newStyle = {
+                    left: this.calcOnReverseScale(wLeft + diffLeft),
+                    top: this.calcOnReverseScale(wTop + diffTop),
+                    width: this.calcOnReverseScale(wWidth + diffWidth),
+                    height: this.calcOnReverseScale(wHeight + diffHeight),
+                    rotate: rotate || wRotate
+                }
+
+                const rotatedStyle = getRotatedStyle(newStyle)
+                const newRotatedStyle = {
+                    rotatedLeft: rotatedStyle.left,
+                    rotatedRight: rotatedStyle.right,
+                    rotatedTop: rotatedStyle.top,
+                    rotatedBottom: rotatedStyle.bottom,
+                    rotatedWidth: rotatedStyle.width,
+                    rotatedHeight: rotatedStyle.height,
+                }
+
+                const centerPoint = { x: newStyle.left + newStyle.width / 2, y: newStyle.top + newStyle.height / 2 }
+                const rotatedCoordinate = {
+                    lt: getRotatedPointCoordinate(newStyle, centerPoint, 'lt'),
+                    rt: getRotatedPointCoordinate(newStyle, centerPoint, 'rt'),
+                    lb: getRotatedPointCoordinate(newStyle, centerPoint, 'lb'),
+                    rb: getRotatedPointCoordinate(newStyle, centerPoint, 'rb'),
+                }
+
+                w.style = {
+                    ...this.curWidgetsStyle[index],
+                    ...newStyle,
+                    ...newRotatedStyle
+                }
+
+                w.rotatedCoordinate = rotatedCoordinate
+
+            })
         }
     },
 
     render() {
         return (
-            <div class="draggable-wrap" vOn:mousedown_prevent={this.handleDownOnRoot}>
+            <div class="draggable-wrap" vOn:mousedown={this.handleDownOnRoot}>
+
+                <div class="draggable-rotate" vOn:mousedown={this.handleRotate} >
+                    <svg-icon icon-class="rotate" size="16" />
+                </div>
+
                 {
-                    this.active &&
-                    <div class="draggable-rotate" vOn:mousedown_stop_prevent={this.handleRotate} >
-                        <svg-icon icon-class="rotate" size="16" />
-                    </div>}
-                {
-                    this.active &&
                     this.points.map(point =>
                         <i
                             class="stretch-point"
@@ -334,20 +389,15 @@ export default {
                     )
                 }
 
-                {
-                    this.active &&
-                    <div class="tip">
-                        <div>x: {this.styles.left}</div>
-                        <div>y: {this.styles.top}</div>
-                        <div>w: {this.styles.width}</div>
-                        <div>h: {this.styles.height}</div>
-                        <div>r: {this.styles.rotate}</div>
-                    </div>
-                }
+                {/* <div class="tip">
+                    <div>x: {this.styles.left}</div>
+                    <div>y: {this.styles.top}</div>
+                    <div>w: {this.styles.width}</div>
+                    <div>h: {this.styles.height}</div>
+                    <div>r: {this.styles.rotate}</div>
+                </div> */}
 
-                {this.active && <div class="draggable-mask" />}
-
-                {this.$slots.default}
+                {/* <div class="draggable-mask" /> */}
             </div>
         )
     },
@@ -365,6 +415,8 @@ export default {
     cursor: move;
     min-width: 5px;
     min-height: 5px;
+    z-index: 6000;
+    border: unset !important;
 
     .tip {
         padding: 6px;

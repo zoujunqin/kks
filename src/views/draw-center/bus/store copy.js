@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import { genGroupId } from '@/utils/group'
+import { genGroupId, findGroup } from '@/utils/group'
 
 export const state = Vue.observable({
     // 当前选中激活的部件，包含组
@@ -28,9 +28,27 @@ export const mutations = {
 
     createGroup() {
         const id = genGroupId()
-        for (const item of state.flatWidgets) { item.groupIds.push(id) }
-        this.setParentGroupId(state.curGroupId)
-        this.setCurGroupId(id)
+        for (const item of state.widgets) { item.gid = id }
+
+        const group = {
+            id,
+            isGroup: true,
+            gid: state.curGroupId,
+            children: state.widgets
+        }
+
+        this.setWidgets(group)
+
+        let curGroup
+        if (state.curGroupId) {
+            for (const item of state.allWidgets) {
+                curGroup = findGroup(item, state.curGroupId).children
+                if (curGroup) break
+            }
+        } else curGroup = state.allWidgets
+
+        curGroup.map(item => state.widgets.find(sub => sub.wid !== item.wid || sub.gid !== item.gid))
+        curGroup.push(group)
     },
     cancelGroup() {
         for (const item of state.widgets) { item.groudIds = item.groudIds.map(id => id !== state.curGroupId) }

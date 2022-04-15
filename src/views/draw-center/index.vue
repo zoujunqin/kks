@@ -8,17 +8,13 @@ import Widgets from '@/views/draw-center/Widgets'
 import { option } from '@/components/Widgets/Line/setup'
 
 import { eventBus, eventName } from './bus/event'
-import { mutations } from './bus/store'
-import { style2WithUnit } from '@/utils/style'
+import { styleToCss } from '@/utils/style'
 
 export default {
     data() {
         return {
             option,
             styleForPlace: {},
-            previewStyleForPlace: {
-                background: 'gray'
-            },
             innerHTMLForPlace: null,
         }
     },
@@ -27,25 +23,21 @@ export default {
 
         dragWidget(option, html) {
 
-            const { width, height } = { width: 200, height: 200 }
             const move = e => {
                 this.innerHTMLForPlace = html
                 this.styleForPlace = { left: e.clientX, top: e.clientY, opacity: 1 }
-
-                if (e.path.includes(this.$refs.DrawArea.$el)) {
-                    Object.assign(this.styleForPlace, this.previewStyleForPlace)
-                    this.styleForPlace = { left: e.clientX, top: e.clientY, opacity: 1, width, height, rotate: 0 }
-                    this.innerHTMLForPlace = null
-                }
             }
 
-            const up = () => {
+            const up = (e) => {
+                this.styleForPlace.opacity = 0
+                const { left, top } = this.styleForPlace
+                const width = 200
+                const height = 200
 
-                const curWidget = { ...option, style: this.styleForPlace, active: false }
-                mutations.setCurWidget(curWidget)
-                eventBus.$emit(eventName.addWidgetToCanvas)
+                if (e.path.includes(this.$refs.DrawArea.$el)) {
+                    eventBus.$emit(eventName.addWidget, { ...option, style: { top, left, width, height } })
+                }
 
-                this.styleForPlace = { opacity: 0 }
 
                 window.removeEventListener('mousemove', move)
                 window.removeEventListener('mouseup', up)
@@ -72,7 +64,7 @@ export default {
     },
 
     beforeDestroy() {
-        eventBus.$off()
+        eventBus.$off(eventName.dragWidget)
         window.addEventListener('resize', this.resize)
     },
 
@@ -90,7 +82,7 @@ export default {
                 </div>
 
                 {/* 拖拽占位, 模拟拖拽组件的视觉效果 */}
-                <div class="placeholer" style={style2WithUnit(this.styleForPlace)} domPropsInnerHTML={this.innerHTMLForPlace} />
+                <div class="placeholer" style={styleToCss(this.styleForPlace)} domPropsInnerHTML={this.innerHTMLForPlace} />
             </div>
         )
     }
@@ -111,9 +103,8 @@ export default {
         position: fixed;
         width: 20px;
         height: 20px;
-        background: #000;
-        pointer-events: none;
         z-index: 3024;
+        pointer-events: none;
         transition: width 0.2s ease, height 0.2s ease, opacity 0.2s ease;
     }
 }

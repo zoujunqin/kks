@@ -168,10 +168,10 @@ export default {
 
     computed: {
         slotWidth() {
-            return this.contentWidth * 2
+            return this.contentWidth * 5
         },
         slotHeight() {
-            return this.contentHeight * 2
+            return this.contentHeight * 5
         },
         // 水平刻度尺宽度
         tickWidth() {
@@ -248,20 +248,20 @@ export default {
             const scrollTop = rc.scrollTop
             const scrollLeft = rc.scrollLeft
 
-            const gapLR = (this.slotWidth - this.calcOnScale(this.contentWidth)) / 2
-            this.sx = scrollLeft - gapLR
+            const contentOffsetLeftAndRight = (this.slotWidth - this.calcOnScale(this.contentWidth)) / 2
+            this.sx = scrollLeft - contentOffsetLeftAndRight
 
-            const gapTB = (this.slotHeight - this.calcOnScale(this.contentHeight)) / 2
-            this.sy = scrollTop - gapTB
+            const contentOffsetTopAndBottom = (this.slotHeight - this.calcOnScale(this.contentHeight)) / 2
+            this.sy = scrollTop - contentOffsetTopAndBottom
 
             this.$emit('transform', {
-                startx: this.sx,
-                starty: this.sy,
+                startX: this.sx,
+                startY: this.sy,
                 scale: this.scale,
-                gapL: gapLR,
-                gapR: gapLR,
-                gapT: gapTB,
-                gapB: gapTB
+                contentOffsetTop: contentOffsetTopAndBottom,
+                contentOffsetLeft: contentOffsetLeftAndRight,
+                contentOffsetBottom: contentOffsetTopAndBottom,
+                contentOffsetRight: contentOffsetLeftAndRight
             })
         },
         // 放大缩小执行
@@ -482,9 +482,6 @@ export default {
         width: 100%;
         height: 100%;
         overflow: scroll;
-        .slot-wrap {
-            position: relative;
-        }
     }
 }
 </style>
