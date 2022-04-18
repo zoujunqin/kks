@@ -31,7 +31,7 @@ export default {
     left: 0;
     width: 0;
     height: 0;
-    z-index: 5999;
+    z-index: 1000;
     .box {
         position: absolute;
         border: 1px solid red;

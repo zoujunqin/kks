@@ -4,12 +4,13 @@ import Draggable from './Draggable'
 import HighlightBox from './HighlightBox'
 // import MarkLine from './MarkLine'
 import Group from './Group'
+import Area from './Area'
 
 import { calcOnReverseScale, calcOnScale } from '@/utils/scale'
 import { noop } from '@/utils'
-import { styleToCss } from '@/utils/style'
-import { getBoundingRect } from '@/utils/group'
-import { initWidget } from '@/utils/widget'
+import { styleToCss, getShapeStyle } from '@/utils/style'
+import { getBoundingRect, findGroupInList, findTopGroupInList, getIntersectionOfArrs, rootGroupId, findGroup } from '@/utils/group'
+import { initWidget, flatWidgets, findIndex, widgetIsEqual } from '@/utils/widget'
 import { isPointInMatrix } from '@/utils/geometry'
 import { getRotatedPointCoordinate } from '@/utils/translate'
 
@@ -18,6 +19,12 @@ import { eventBus, eventName } from '../bus/event'
 
 
 export default {
+
+    provide() {
+        return {
+            getFlatedWidgets: () => this.flatedWidgets
+        }
+    },
 
     data() {
         return {
@@ -34,21 +41,32 @@ export default {
 
             highlightWidgets: [],
 
+            oldWidgets: [],
+
+            shapeMoving: false
+
         }
     },
 
     computed: {
         curShape() {
-            if (this.flatWidgets.length === 0) return null
-            else if (this.flatWidgets.length === 1) return this.flatWidgets[0]
+            if (this.flatedWidgets.length === 0) return null
+            else if (this.flatedWidgets.length === 1) return this.flatedWidgets[0]
             else return {
-                style: { ...getBoundingRect(this.flatWidgets.map(w => w.style)), rotate: 0 }
+                style: { ...getBoundingRect(this.flatedWidgets.map(w => w.style)), rotate: 0 }
             }
         },
 
-        flatWidgets() { return state.flatWidgets },
+        widgets() { return state.widgets },
+        flatedWidgets() { return flatWidgets(state.widgets) },
 
         allWidgets() { return state.allWidgets },
+        allFlatedWidgets() { return flatWidgets(state.allWidgets) },
+
+        prevWidgets() {
+            const group = findGroup(state.allWidgets, state.prevGroupId)
+            return group ? [group] : []
+        },
 
         canvasRectInfo() {
             return {
@@ -75,85 +93,112 @@ export default {
 
         /************************  widget 🇨🇳  ***************************/
 
-        // 选中画布
-        selectCanvas() {
-        },
-
-        highlightWidget(e) {
+        // 获取符合鼠标位置的层级最高的 widget
+        getWidgetUnderCursor(e) {
             const point = { x: e.clientX - this.canvasRectInfo.left, y: e.clientY - this.canvasRectInfo.top }
 
-            const hs = this.allWidgets.filter(item => {
+            const widgets = this.allFlatedWidgets.filter(item => {
                 const { lt, rt, lb, rb } = item.rotatedCoordinate
                 return isPointInMatrix(lt, rt, rb, lb, point)
             })
-            // TODO: hs还要做层级的过滤，只用 hs 中层级最高的一个
-            let widget = hs[0]
-            if (!widget) return this.highlightWidgets = []
-
-            // TODO: 这边 filter 现在用的是最顶层的 group，后面要进行 group 的剥离
-            widget = widget.groupIds.length !== 0 ? this.allWidgets.filter(item => item.groupIds.includes(widget.groupIds[widget.groupIds.length - 1])) : [widget]
-
-            for (const item of widget) {
-                if (!this.flatWidgets.find(cur => cur.wid == item.wid)) this.highlightWidgets.push(item)
-            }
+            const widget = widgets.reduce((result, item) => {
+                result = result ? (item.style['z-index'] > result.style['z-index'] ? item : result) : item
+                return result
+            }, null)
+            return widget
         },
 
-        // 选中 widget, 可能选中的是组
-        selectWidget(widget, e) {
-            this.highlightWidget(e)
 
-            const length = widget.groupIds.length
-            const index = widget.groupIds.findIndex(id => id === state.curGroupId)
+        handleMoveOnContentWrap() {
+            // const point = { x: e.clientX - this.canvasRectInfo.left, y: e.clientY - this.canvasRectInfo.top }
 
-            console.log(index)
+            // const hs = this.flatedWidgets.filter(item => {
+            //     const { lt, rt, lb, rb } = item.rotatedCoordinate
+            //     return isPointInMatrix(lt, rt, rb, lb, point)
+            // })
+            // // TODO: hs还要做层级的过滤，只用 hs 中层级最高的一个
+            // let widget = hs[0]
+            // if (!widget) return this.highlightWidgets = []
 
-            // 按住键盘 metaKey + 鼠标单击
-            if (e.metaKey) {
+            // // TODO: 这边 filter 现在用的是最顶层的 group，后面要进行 group 的剥离
+            // widget = widget.groupIds.length !== 0 ? this.flatedWidgets.filter(item => item.groupIds.includes(widget.groupIds[widget.groupIds.length - 1])) : [widget]
 
-                // if (widget.wid === this.prevSelectedWidget.wid) {
+            // for (const item of widget) {
+            //     if (!this.flatedWidgets.find(cur => cur.wid == item.wid)) this.highlightWidgets.push(item)
+            // }
+        },
 
-                // }
-                // 当前组所在的下标
-                const index = widget.groupIds.findIndex(id => id === state.curGroupId)
+        handleDownOnContentWrap(e) {
+            this.shapeMoving = false
 
-                // 没找到，说明点击的 widget 不在已有的组里
-                if (index === -1) {
-                    // 获取当前 widget 最大的组的所有 widget, 没有组就是自身
-                    const curGroup = length === 0 ? [widget] : this.allWidgets.map(item => item.groupIds.includes(widget.groupIds[length - 1]))
-                    mutations.setWidgets(curGroup, true)
-                    mutations.setFlatWidgets([...state.flatWidgets, ...curGroup])
+            // 获取符合鼠标位置的元素
+            let widget = this.getWidgetUnderCursor(e)
+            if (widget && e.metaKey) {
+                const ids = getIntersectionOfArrs(...this.widgets.map(item => item.gids))
+                if (ids.length === 0) {
+                    widget = findTopGroupInList(this.allWidgets, widget.gid) || widget
+                    mutations.setPrevGroupId(rootGroupId)
+                    mutations.setCurGroupId(rootGroupId)
                 }
+                else if (widget.gids.length !== 0) {
+                    const id = ids[0]
+                    widget = findGroupInList(this.allWidgets, widget.gids[widget.gids.findIndex(item => item === id) - 1]) || widget
+                    mutations.setPrevGroupId(id)
+                    mutations.setCurGroupId(id)
+                }
+                // 如果点击了两次，则 state.widgets 里会有两个一样的元素
+                mutations.setWidgets(widget, false)
+                return this.$nextTick(() => { this.$refs?.shape?.handleDownOnRoot(e) })
+            }
+            if (widget && !e.metaKey) {
+                widget = (state.curGroupId === rootGroupId ? findTopGroupInList(this.allWidgets, widget.gid) : findGroupInList(this.allWidgets, widget.gids[widget.gids.findIndex(item => item === state.prevGroupId) - 1])) || widget
 
+                mutations.setPrevGroupId(widget.gid)
+                mutations.setCurGroupId(widget.group ? widget.id : widget.gid)
 
-                return
+                !this.widgets.includes(widget) && mutations.setWidgets([widget])
+                return this.$nextTick(() => { this.$refs?.shape?.handleDownOnRoot(e) })
             }
 
-            // 鼠标单击
-            if (length === 0) {
-                mutations.setParentGroupId(null)
-                mutations.setCurGroupId(null)
-                widget = [widget]
-            } else if (index === 0) {
-                // 选中的是最小的组，最靠近 widget 的组
-                mutations.setParentGroupId(widget.groupIds[index])
-                mutations.setCurGroupId(null)
-                widget = [widget]
-            } else if (index === length - 1) {
-                // 表示选中的是最大的组
-                mutations.setCurGroupId(widget.groupIds[index - 1])
-                mutations.setParentGroupId(null)
-                widget = this.allWidgets.filter(item => item.groupIds.includes(widget.groupIds[index - 1]))
-            } else {
-                mutations.setParentGroupId(widget.groupIds[index])
-                mutations.setCurGroupId(widget.groupIds[index - 1])
-                widget = this.allWidgets.filter(item => item.groupIds.includes(widget.groupIds[index - 1]))
+            // 点击
+
+
+
+        },
+
+        handleUpOnContentWrap(e) {
+
+            let widget = this.getWidgetUnderCursor(e)
+            if (widget && e.metaKey) {
+                widget = findGroupInList(this.allWidgets, widget.gid) || widget
+                const indexs = findIndex(this.widgets, item => widgetIsEqual(widget, item))
+                if (indexs.length < 2) return
+                const newWidgets = this.widgets.filter((_, index) => !(this.shapeMoving ? [indexs[0]] : indexs).includes(index))
+                mutations.setWidgets(newWidgets)
+            }
+            else if (widget && !e.metaKey) {
+                // 判断有没有移动
+                if (this.shapeMoving) return
+
+                widget = (state.curGroupId === rootGroupId ? findTopGroupInList(this.allWidgets, widget.gid) : findGroupInList(this.allWidgets, widget.gids[widget.gids.findIndex(item => item === state.prevGroupId) - 1])) || widget
+
+                mutations.setPrevGroupId(widget.gid)
+                mutations.setCurGroupId(widget.group ? widget.id : widget.gid)
+
+                mutations.setWidgets([widget])
             }
 
-            mutations.setFlatWidgets(widget)
-            this.$nextTick(() => {
-                this.$refs.shape.handleDownOnRoot(e)
-            })
+        },
 
+        handleClickOnContentWrap() {
+            // let widget = this.getWidgetUnderCursor(e)
+            // if (widget) {
+            //     if (e.metaKey && widget.active) {
+            //         widget = widget.gid ? findGroupInList(this.allWidgets, widget.gid) : widget
+            //         if (widget.active && state.widgets.includes(widget)) state.widgets.splice(widget, 1)
+            //         widget.active = false
+            //     }
+            // }
         },
 
 
@@ -178,12 +223,17 @@ export default {
             }
             curWidget.rotatedCoordinate = rotatedCoordinate
 
-            mutations.setFlatWidgets([curWidget])
+            console.log(curWidget)
+
+            mutations.setCurGroupId(rootGroupId)
+            mutations.setPrevGroupId(rootGroupId)
+            mutations.setWidgets([curWidget])
             mutations.setAllWidgets(curWidget)
         },
         /************************  widget 🇨🇳🇨🇳🇨🇳  ***************************/
 
         changeShapeStyle() { },
+        handleShapeMove(moving) { this.shapeMoving = moving },
 
         getRulerRectInfo() {
             this.rulerRectInfo = document.querySelector('#ruler').getBoundingClientRect()
@@ -220,34 +270,38 @@ export default {
                     vOn:transform={this.handleRulerTransform}
                 >
 
-                    <div class='content-wrap' vOn:mousedown={this.selectCanvas} vOn:mousemove={this.highlightWidget}>
+                    <div class='content-wrap' vOn:mousedown={this.handleDownOnContentWrap} vOn:mousemove={this.handleMoveOnContentWrap} vOn:mouseup={this.handleUpOnContentWrap} vOn:click={this.handleClickOnContentWrap}>
 
                         <div id="canvas-content" class="content" style={styleToCss({ width: this.contentWidth, height: this.contentHeight })}>
 
-                            <Group />
+                            <Area />
+
+                            <Group widgets={this.widgets} />
+                            <Group prev widgets={this.prevWidgets} />
 
                             <HighlightBox widgets={this.highlightWidgets} />
-                            <HighlightBox active widgets={this.flatWidgets} />
+                            <HighlightBox active widgets={this.flatedWidgets} />
 
-                            {/* <MarkLine conforms={this.allWidgets.map(item => item.style)} /> */}
+                            {/* <MarkLine conforms={this.flatedWidgets.map(item => item.style)} /> */}
 
                             {
                                 this.curShape &&
                                 <Draggable
                                     ref='shape'
-                                    style={styleToCss(this.curShape.style)}
-                                    styles={this.curShape.style}
+                                    style={styleToCss(getShapeStyle(this.curShape.style))}
+                                    styles={(this.curShape.style)}
                                     scale={this.rulerTransformInfo.scale}
                                     rulerStartX={this.rulerTransformInfo.startX}
                                     rulerStartY={this.rulerTransformInfo.startY}
                                     vOn:transform={this.changeShapeStyle}
+                                    vOn:move={this.handleShapeMove}
                                 />
                             }
 
                             {
-                                this.allWidgets.map(
-                                    (widget, index) =>
-                                        <div class='component-wrap' data-widget-index={index} style={styleToCss(widget.style)} vOn:mousedown={this.selectWidget.bind(this, widget)} >
+                                this.allFlatedWidgets.map(
+                                    widget =>
+                                        <div class='component-wrap' style={styleToCss(widget.style)} >
                                             <widget.component />
                                         </div>
                                 )

@@ -30,11 +30,13 @@ const props = {
 import { calcOnReverseScale, calcOnScale } from '@/utils/scale'
 import calculateComponentPositonAndSize from '@/utils/calcPositionAndSize'
 import { mod360, getRotatedPointCoordinate } from '@/utils/translate'
-import { state } from '../bus/store'
 import { getRotatedStyle } from '@/utils/style'
 
 export default {
     props,
+
+    inject: ['getFlatedWidgets'],
+
     data() {
         return {
             // handleDownOnRoot 方法中存储的事件
@@ -78,9 +80,7 @@ export default {
             }
         },
 
-        flatWidgets() {
-            return state.flatWidgets
-        }
+        flatedWidgets() { return this.getFlatedWidgets() }
     },
 
     watch: {
@@ -185,7 +185,7 @@ export default {
 
         saveShapeStyleAndCurWidgetsStyle() {
             this.shapeStyle = this.styles
-            this.curWidgetsStyle = this.flatWidgets.map(w => ({ ...w.style }))
+            this.curWidgetsStyle = this.flatedWidgets.map(w => ({ ...w.style }))
         },
 
         handleDownOnPoint(point, e) {
@@ -223,7 +223,6 @@ export default {
                     symmetricPoint,
                 })
 
-                // this.$emit('transform', this.backStyle(style))
                 this.changeShapeStyle(style)
 
             }
@@ -269,6 +268,7 @@ export default {
                 const top = curY - startY + originTop
 
                 this.changeShapeStyle({ left, top })
+                this.$emit('move', true)
             }
 
             const up = () => {
@@ -330,7 +330,7 @@ export default {
             const diffWidth = width !== void 0 ? width - oldWidth : 0
             const diffHeight = height !== void 0 ? height - oldHeight : 0
 
-            this.flatWidgets.forEach((w, index) => {
+            this.flatedWidgets.forEach((w, index) => {
 
                 const { left: wLeft, top: wTop, width: wWidth, height: wHeight, rotate: wRotate } = this.scaleStyle(this.curWidgetsStyle[index])
                 const newStyle = {
